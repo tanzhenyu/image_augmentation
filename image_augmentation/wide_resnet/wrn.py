@@ -48,7 +48,7 @@ def residual_block(input, num_filters=16, k=1,
                name=name + '/conv2_3x3')(x)
 
     x = Add(name=name + '/add')([init, x])
-    x = batch_norm(name=name + '/bn')
+    x = batch_norm(name=name + '/bn')(x)
     x = relu(name=name + '/out')(x)
 
     return x
