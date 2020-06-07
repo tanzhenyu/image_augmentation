@@ -1,6 +1,7 @@
 from tensorflow.keras.layers.experimental.preprocessing import Normalization
 from tensorflow.keras.layers.experimental.preprocessing import Rescaling
 
+
 def preprocess_imagenet(x):
     # scale images to a range (-1, +1)
     x = Rescaling(scale=1 / 127.5, offset=-1, name='rescaling')(x)
