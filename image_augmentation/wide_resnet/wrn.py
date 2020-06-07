@@ -1,5 +1,5 @@
-from tensorflow.keras.layers import Conv2D, Add
-from tensorflow.keras.layers import Activation, BatchNormalization
+from tensorflow.keras.layers import Conv2D, MaxPooling2D
+from tensorflow.keras.layers import Activation, BatchNormalization, Add
 from tensorflow.keras.layers import GlobalAveragePooling2D, Dropout, Dense
 from tensorflow.keras import Input, Model
 
@@ -26,7 +26,9 @@ def conv1_block(input, name='conv1'):
     return x
 
 
-def residual_block(input, k=1, stride=1, num_filters=16, dropout=0.0, name='conv'):
+def residual_block(input, num_filters=16, k=1,
+                   stride=1, dropout=0.0, name='conv2'):
+
     num_filters = num_filters * k
     init = input
 
@@ -51,3 +53,48 @@ def residual_block(input, k=1, stride=1, num_filters=16, dropout=0.0, name='conv
     x = relu(name=name + '/out')(x)
 
     return x
+
+
+def WideResNet(input_shape, depth=28, k=10, dropout=0.0, max_pool=False,
+               num_classes=10, name=None):
+    if name is None:
+        name = name + '-' + str(depth) + '-' + str(k)
+
+    assert (depth - 4) % 6 == 0, "depth must be 6n+4"
+    n = (depth - 4) // 6
+
+    filters = [(16 * i) for i in range(1, 4 + 1)]
+
+    inp = Input(input_shape, name='input')
+
+    # conv1
+    x = conv1_block(inp, name='conv1')
+
+    if max_pool:
+        x = MaxPooling2D((2, 2), strides=2, padding='same', name='conv1/pool')
+
+    # conv2: n blocks
+    for i in range(1, n + 1):
+        x = residual_block(x, num_filters=filters[0], k=k,
+                           stride=1, dropout=dropout, 
+                           name='conv2' + '/block' + str(i))
+
+    # conv3: n blocks
+    for i in range(1, n + 1):
+        stride = 2 if i == 1 else 1
+        x = residual_block(x, num_filters=filters[0], k=k,
+                           stride=stride, dropout=dropout,
+                           name='conv3' + '/block' + str(i))
+
+    # conv4: n blocks
+    for i in range(1, n + 1):
+        stride = 2 if i == 1 else 1
+        x = residual_block(x, num_filters=filters[0], k=k,
+                           stride=stride, dropout=dropout,
+                           name='conv4' + '/block' + str(i))
+
+    x = GlobalAveragePooling2D(name='avg_pool')(x)
+    x = Dense(num_classes, activation='softmax', name='preds')(x)
+
+    net = Model(inp, x, name=name)
+    return net
