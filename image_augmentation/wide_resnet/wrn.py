@@ -82,14 +82,14 @@ def WideResNet(input_shape, depth=28, k=10, dropout=0.0, max_pool=False,
     # conv3: n blocks
     for i in range(1, n + 1):
         stride = 2 if i == 1 else 1
-        x = residual_block(x, num_filters=filters[0], k=k,
+        x = residual_block(x, num_filters=filters[1], k=k,
                            stride=stride, dropout=dropout,
                            name='conv3' + '/block' + str(i))
 
     # conv4: n blocks
     for i in range(1, n + 1):
         stride = 2 if i == 1 else 1
-        x = residual_block(x, num_filters=filters[0], k=k,
+        x = residual_block(x, num_filters=filters[2], k=k,
                            stride=stride, dropout=dropout,
                            name='conv4' + '/block' + str(i))
 
