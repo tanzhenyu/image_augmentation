@@ -35,7 +35,6 @@ def residual_block(input, num_filters=16, k=1,
     if init.shape[channel_axis] != num_filters:
         init = Conv2D(num_filters, (1, 1), strides=stride, padding='same',
                       name=name + '/conv_identity_1x1')(input)
-        init = batch_norm(name=name + '/conv_identity_bn')(init)
 
     x = Conv2D(num_filters, (3, 3), strides=stride, padding='same',
                name=name + '/conv1_3x3')(input)
@@ -47,15 +46,15 @@ def residual_block(input, num_filters=16, k=1,
 
     x = Conv2D(num_filters, (3, 3), strides=1, padding='same',
                name=name + '/conv2_3x3')(x)
-    x = batch_norm(name=name + '/conv2_bn')(x)
 
     x = Add(name=name + '/add')([init, x])
+    x = batch_norm(name=name + '/bn')
     x = relu(name=name + '/out')(x)
 
     return x
 
 
-def WideResNet(input_shape, depth=28, k=10, dropout=0.0, max_pool=False,
+def WideResNet(input_shape, depth=28, k=10, dropout=0.0,
                num_classes=10, name=None):
     if name is None:
         name = 'WideResNet' + '-' + str(depth) + '-' + str(k)
@@ -69,9 +68,6 @@ def WideResNet(input_shape, depth=28, k=10, dropout=0.0, max_pool=False,
 
     # conv1
     x = conv_block(inp, name='conv1')
-
-    if max_pool:
-        x = MaxPooling2D((2, 2), strides=2, padding='same', name='conv1/pool')
 
     # conv2: n blocks
     for i in range(n):
