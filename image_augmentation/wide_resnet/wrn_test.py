@@ -23,7 +23,7 @@ def test_wrn_28_10():
 
 
 def test_wrn_40_2():
-    inp_shape = (224, 224, 3)
+    inp_shape = (32, 32, 3)
 
     net = WideResNet(inp_shape, depth=40, k=2)
     net.summary()

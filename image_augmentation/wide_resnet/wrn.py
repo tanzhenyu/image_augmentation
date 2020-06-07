@@ -5,9 +5,6 @@ from tensorflow.keras import Input, Model
 
 from tensorflow.keras import backend as K
 
-from tensorflow.keras.layers.experimental.preprocessing import Normalization
-from tensorflow.keras.layers.experimental.preprocessing import Rescaling
-
 from functools import partial
 
 channel_axis = 1 if K.image_data_format() == 'channels_first' else -1
