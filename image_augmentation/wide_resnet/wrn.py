@@ -30,7 +30,7 @@ def residual_block(input, k=1, stride=1, num_filters=16, dropout=0.0, name='conv
     num_filters = num_filters * k
     init = input
 
-    if init.output_shape[channel_axis] != num_filters:
+    if init.shape[channel_axis] != num_filters:
         init = Conv2D(num_filters, (1, 1), strides=stride, padding='same',
                       name=name + '/conv_identity_1x1')(input)
         init = batch_norm(name=name + '/conv_identity_bn')(init)
@@ -40,7 +40,10 @@ def residual_block(input, k=1, stride=1, num_filters=16, dropout=0.0, name='conv
     x = batch_norm(name=name + '/conv1_bn')(x)
     x = relu(name=name + '/conv1_out')(x)
 
-    x = Conv2D(num_filters, (3, 3), stride=1, padding='same', 
+    if dropout > 0.0:
+        x = Dropout(dropout, name=name + '/dropout')(x)
+
+    x = Conv2D(num_filters, (3, 3), strides=1, padding='same', 
                name=name + '/conv2_3x3')(x)
     x = batch_norm(name=name + '/conv2_bn')(x)
 
