@@ -7,7 +7,7 @@ from image_augmentation.wide_resnet.wrn import WideResNet
 
 def visualize_model(model):
     net_dig_path = '/tmp/model.png'
-    plot_model(net, net_dig_path, show_shapes=True)
+    plot_model(model, net_dig_path, show_shapes=True)
     os.system('open ' + net_dig_path)
 
 
