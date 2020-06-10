@@ -35,4 +35,4 @@ train_ds = cifar10['train'].cache().shuffle(
 
 val_ds = cifar10['test'].cache().batch(batch_size)
 
-# model.fit(train_ds, validation_data=val_ds, epochs=epochs)
+model.fit(train_ds, validation_data=val_ds, epochs=epochs)
