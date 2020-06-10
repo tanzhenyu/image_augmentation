@@ -1,2 +1,3 @@
 tf-nightly
+tensorflow_datasets
 numpy

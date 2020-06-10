@@ -10,6 +10,7 @@ pydot = "*"
 [packages]
 tf-nightly = "*"
 numpy = "*"
+tensorflow_datasets = "*"
 
 [requires]
 python_version = "3.7"
