@@ -28,7 +28,7 @@ model.summary()
 
 batch_size = 128
 epochs = 200
-restart_steps = 10
+restart_steps = 200
 init_learn_rate = 0.01
 weight_decay = 10e-4
 
@@ -37,7 +37,7 @@ train_ds = train_ds.cache().shuffle(
 val_ds = val_ds.cache().batch(batch_size)
 
 lr_schedule = keras.experimental.CosineDecayRestarts(init_learn_rate, restart_steps)
-opt = keras.optimizers.SGD(lr_schedule, momentum=0.9)
+opt = keras.optimizers.SGD(lr_schedule, momentum=0.9, nesterov=True)
 
 l2 = keras.regularizers.L2(weight_decay)
 for layer in wrn_40_2.layers:
