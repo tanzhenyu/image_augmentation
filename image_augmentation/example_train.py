@@ -1,3 +1,4 @@
+import tensorflow as tf
 from tensorflow import keras
 import tensorflow_datasets as tfds
 
@@ -17,21 +18,24 @@ wrn_28_10 = WideResNet(inp_shape, depth=28, k=10, num_classes=num_classes)
 wrn_28_10.summary()
 
 inp = keras.layers.Input(inp_shape)
-x = baseline_augmentation(inp)
 x = preprocess_cifar(inp, images_only)
+x = baseline_augmentation(x)
 x = wrn_28_10(x)
 
 model = keras.Model(inp, x)
 model.summary()
 
-model.compile('adam', loss='sparse_categorical_crossentropy',
-               metrics=['accuracy'])
-
 batch_size = 128
-epochs = 40
+epochs = 200
 
 train_ds = cifar10['train'].cache().shuffle(
         1000, reshuffle_each_iteration=True).batch(batch_size)
+
+lr_schedule = keras.experimental.CosineDecayRestarts(0.01, 10)
+opt = keras.optimizers.SGD(lr_schedule, momentum=0.9)
+
+model.compile(opt, loss='sparse_categorical_crossentropy',
+              metrics=['accuracy'])
 
 val_ds = cifar10['test'].cache().batch(batch_size)
 
