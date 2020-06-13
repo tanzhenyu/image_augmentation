@@ -20,8 +20,8 @@ def cifar_standardization(x, data_samples):
 
 def cifar_baseline_augmentation(x):
     x = RandomFlip(mode='horizontal', name='h_flip')(x)
-    x = RandomCrop(28, 28, name='crop')(x)
-    x = ZeroPadding2D((2, 2), name='center_pad')(x)
+    x = ZeroPadding2D((4, 4), name='padding')(x)
+    x = RandomCrop(32, 32, name='crop')(x)
     return x
 
 
