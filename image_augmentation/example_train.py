@@ -30,6 +30,7 @@ batch_size = 128
 epochs = 200
 restart_steps = 10
 init_learn_rate = 0.01
+weight_decay = 10e-4
 
 train_ds = train_ds.cache().shuffle(
         1000, reshuffle_each_iteration=True).batch(batch_size)
@@ -37,6 +38,10 @@ val_ds = val_ds.cache().batch(batch_size)
 
 lr_schedule = keras.experimental.CosineDecayRestarts(init_learn_rate, restart_steps)
 opt = keras.optimizers.SGD(lr_schedule, momentum=0.9)
+
+l2 = keras.regularizers.L2(weight_decay)
+for layer in wrn_40_2.layers:
+    layer.activity_regularizer = l2
 
 model.compile(opt, loss='sparse_categorical_crossentropy',
               metrics=['accuracy'])
