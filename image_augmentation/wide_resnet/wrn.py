@@ -1,4 +1,4 @@
-from tensorflow.keras.layers import Conv2D, MaxPooling2D
+from tensorflow.keras.layers import Conv2D
 from tensorflow.keras.layers import Activation, BatchNormalization, Add
 from tensorflow.keras.layers import GlobalAveragePooling2D, Dropout, Dense
 from tensorflow.keras import Input, Model
@@ -7,18 +7,18 @@ from tensorflow.keras import backend as K
 
 from functools import partial
 
-channel_axis = 1 if K.image_data_format() == 'channels_first' else -1
-batch_norm = partial(BatchNormalization, axis=channel_axis)
+_channel_axis = 1 if K.image_data_format() == 'channels_first' else -1
+_batch_norm = partial(BatchNormalization, axis=_channel_axis)
 
-relu = partial(Activation, 'relu')
+_relu = partial(Activation, 'relu')
 
 
 def _conv_block(input, name='conv1'):
     x = input
 
     x = Conv2D(16, (3, 3), padding='same', name=name + '/conv_3x3')(x)
-    x = batch_norm(name=name + '/conv_bn')(x)
-    x = relu(name=name + '/conv_out')(x)
+    x = _batch_norm(name=name + '/conv_bn')(x)
+    x = _relu(name=name + '/conv_out')(x)
 
     return x
 
@@ -29,14 +29,14 @@ def _residual_block(input, num_filters=16, k=1,
     num_filters = num_filters * k
     init = input
 
-    if init.shape[channel_axis] != num_filters:
+    if init.shape[_channel_axis] != num_filters:
         init = Conv2D(num_filters, (1, 1), strides=stride, padding='same',
                       name=name + '/conv_identity_1x1')(input)
 
     x = Conv2D(num_filters, (3, 3), strides=stride, padding='same',
                name=name + '/conv1_3x3')(input)
-    x = batch_norm(name=name + '/conv1_bn')(x)
-    x = relu(name=name + '/conv1_out')(x)
+    x = _batch_norm(name=name + '/conv1_bn')(x)
+    x = _relu(name=name + '/conv1_out')(x)
 
     if dropout > 0.0:
         x = Dropout(dropout, name=name + '/dropout')(x)
@@ -45,8 +45,8 @@ def _residual_block(input, num_filters=16, k=1,
                name=name + '/conv2_3x3')(x)
 
     x = Add(name=name + '/add')([init, x])
-    x = batch_norm(name=name + '/bn')(x)
-    x = relu(name=name + '/out')(x)
+    x = _batch_norm(name=name + '/bn')(x)
+    x = _relu(name=name + '/out')(x)
 
     return x
 

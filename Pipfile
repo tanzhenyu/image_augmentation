@@ -11,9 +11,9 @@ pylint = "*"
 [packages]
 tf-nightly = "*"
 numpy = "*"
-tensorflow_datasets = "*"
 matplotlib = "*"
 pylint = "*"
+tensorflow-datasets = "*"
 
 [requires]
 python_version = "3.7"
