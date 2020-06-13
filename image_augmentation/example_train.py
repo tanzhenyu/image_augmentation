@@ -1,7 +1,7 @@
 from tensorflow import keras
 
 from image_augmentation.wide_resnet import WideResNet
-from image_augmentation.preprocessing import preprocess_cifar, baseline_augmentation
+from image_augmentation.preprocessing import cifar_standardization, cifar_baseline_augmentation
 from image_augmentation.datasets import cifar10, reduced_cifar10
 
 ds = cifar10()
@@ -19,8 +19,8 @@ wrn_40_2 = WideResNet(inp_shape, depth=40, k=2, num_classes=num_classes)
 wrn_40_2.summary()
 
 inp = keras.layers.Input(inp_shape)
-x = preprocess_cifar(inp, images_only)
-x = baseline_augmentation(x)
+x = cifar_standardization(inp, images_only)
+x = cifar_baseline_augmentation(x)
 x = wrn_40_2(x)
 
 model = keras.Model(inp, x)
