@@ -1,1 +1,1 @@
-from .preprocess import preprocess_imagenet, preprocess_cifar
+from .preprocess import *
