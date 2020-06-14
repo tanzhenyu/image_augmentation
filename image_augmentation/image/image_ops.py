@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-_gray = (128, )
+_gray = 128
 
 @tf.function
 def invert(img):
@@ -29,19 +29,20 @@ def cutout(img, size=16, color=None):
     uy, ux = tf.minimum(height, loc_y + size // 2), tf.minimum(width, loc_x + size // 2)
 
     if color is None:
-        color = tf.convert_to_tensor(_gray * channels, img.dtype)
+        color = tf.repeat(_gray, channels)
     else:
-        color = tf.convert_to_tensor(color, img.dtype)
+        color = tf.convert_to_tensor(color)
+    color = tf.cast(color, img.dtype)
 
     cut = tf.ones((uy - ly, ux - lx, channels), img.dtype)
 
-    top = img[0: lx, 0: width]
+    top = img[0: ly, 0: width]
     between = tf.concat([
         img[ly: uy, 0: lx],
         cut * color,
         img[ly: uy, ux: width]
     ], axis=1)
-    bottom = img[ux: height, 0: width]
+    bottom = img[uy: height, 0: width]
 
     cutout_img = tf.concat([top, between, bottom], axis=0)
     return cutout_img
