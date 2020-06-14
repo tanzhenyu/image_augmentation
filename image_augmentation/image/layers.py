@@ -1,5 +1,6 @@
 from .image_ops import cutout
 
+import tensorflow as tf
 from tensorflow.keras import backend as K
 from tensorflow.keras.layers import Layer
 
@@ -17,7 +18,7 @@ class RandomCutout(Layer):
             training = K.learning_phase()
 
         if training:
-            return cutout(inputs)
+            return tf.map_fn(lambda x: cutout(x, self.size), inputs)
         else:
             return inputs
 
