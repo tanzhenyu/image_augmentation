@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-_gray = 128
+GRAY = 128
 
 
 @tf.function

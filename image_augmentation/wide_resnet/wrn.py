@@ -7,9 +7,9 @@ from tensorflow.keras import backend as K
 
 from functools import partial
 
-_channel_axis = 1 if K.image_data_format() == 'channels_first' else -1
-_batch_norm = partial(BatchNormalization, axis=_channel_axis)
+CHANNEL_AXIS = 1 if K.image_data_format() == 'channels_first' else -1
 
+_batch_norm = partial(BatchNormalization, axis=CHANNEL_AXIS)
 _relu = partial(Activation, 'relu')
 
 
@@ -29,7 +29,7 @@ def _residual_block(input, num_filters=16, k=1,
     num_filters = num_filters * k
     init = input
 
-    if init.shape[_channel_axis] != num_filters:
+    if init.shape[CHANNEL_AXIS] != num_filters:
         init = Conv2D(num_filters, (1, 1), strides=stride, padding='same',
                       name=name + '/conv_identity_1x1')(input)
 
