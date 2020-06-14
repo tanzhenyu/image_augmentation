@@ -5,11 +5,11 @@ from tensorflow.keras.layers import ZeroPadding2D
 
 from tensorflow.keras import backend as K
 
-channel_axis = 1 if K.image_data_format() == 'channels_first' else -1
+CHANNEL_AXIS = 1 if K.image_data_format() == 'channels_first' else -1
 
 
 def cifar_standardization(x, data_samples):
-    norm_layer = Normalization(axis=channel_axis, name='mean_normalization')
+    norm_layer = Normalization(axis=CHANNEL_AXIS, name='mean_normalization')
     # compute mean and std of images
     norm_layer.adapt(data_samples)
 

@@ -30,7 +30,7 @@ def cutout(img, size=16, color=None):
     uy, ux = tf.minimum(height, loc_y + size // 2), tf.minimum(width, loc_x + size // 2)
 
     if color is None:
-        color = tf.repeat(_gray, channels)
+        color = tf.repeat(GRAY, channels)
     else:
         color = tf.convert_to_tensor(color)
     color = tf.cast(color, img.dtype)
