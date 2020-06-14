@@ -2,6 +2,7 @@ import tensorflow as tf
 
 _gray = 128
 
+
 @tf.function
 def invert(img):
     img = tf.convert_to_tensor(img)
