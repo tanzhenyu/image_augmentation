@@ -1,1 +1,2 @@
-from .preprocess import *
+from image_augmentation.preprocessing.preprocess import cifar_baseline_augmentation, cifar_standardization
+from image_augmentation.preprocessing.preprocess import imagenet_baseline_augmentation, imagenet_standardization

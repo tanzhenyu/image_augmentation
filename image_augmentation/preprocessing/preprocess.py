@@ -5,6 +5,8 @@ from tensorflow.keras.layers import ZeroPadding2D
 
 from tensorflow.keras import backend as K
 
+from image_augmentation.image import RandomCutout
+
 CHANNEL_AXIS = 1 if K.image_data_format() == 'channels_first' else -1
 
 
@@ -22,6 +24,7 @@ def cifar_baseline_augmentation(x):
     x = RandomFlip(mode='horizontal', name='h_flip')(x)
     x = ZeroPadding2D((4, 4), name='padding')(x)
     x = RandomCrop(32, 32, name='crop')(x)
+    x = RandomCutout(16, name='cutout')(x)
     return x
 
 

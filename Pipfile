@@ -9,7 +9,7 @@ pydot = "*"
 pylint = "*"
 
 [packages]
-tf-nightly = "*"
+tf-nightly = "2.3.0.dev20200613"
 numpy = "*"
 matplotlib = "*"
 pylint = "*"

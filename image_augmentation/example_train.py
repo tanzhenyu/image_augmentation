@@ -19,11 +19,11 @@ wrn_40_2 = WideResNet(inp_shape, depth=40, k=2, num_classes=num_classes)
 wrn_40_2.summary()
 
 inp = keras.layers.Input(inp_shape)
-x = cifar_standardization(inp, images_only)
-x = cifar_baseline_augmentation(x)
+x = cifar_baseline_augmentation(inp)
+x = cifar_standardization(x, images_only)
 x = wrn_40_2(x)
 
-model = keras.Model(inp, x)
+model = keras.Model(inp, x, name='WRN')
 model.summary()
 
 batch_size = 128
