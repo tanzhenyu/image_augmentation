@@ -5,7 +5,7 @@ from tensorflow.keras.utils import plot_model
 from image_augmentation.wide_resnet.wrn import WideResNet
 
 
-def visualize_model(model):
+def _visualize_model(model):
     net_dig_path = '/tmp/model.png'
     plot_model(model, net_dig_path, show_shapes=True)
     os.system('open ' + net_dig_path)
@@ -17,7 +17,7 @@ def test_wrn_28_10():
     net = WideResNet(inp_shape, depth=28, k=10)
     net.summary()
 
-    visualize_model(net)
+    _visualize_model(net)
 
     assert True
 
@@ -28,7 +28,7 @@ def test_wrn_40_2():
     net = WideResNet(inp_shape, depth=40, k=2)
     net.summary()
 
-    visualize_model(net)
+    _visualize_model(net)
 
     assert True
 
