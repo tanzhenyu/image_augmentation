@@ -50,7 +50,7 @@ def solarize(img, threshold):
     threshold = tf.cast(threshold, img.dtype)
 
     inverted_img = invert(img)
-    mask = img > threshold
+    mask = img < threshold
 
-    solarized_img = tf.where(mask, inverted_img, img)
+    solarized_img = tf.where(mask, img, inverted_img)
     return solarized_img
