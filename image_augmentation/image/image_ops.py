@@ -47,3 +47,15 @@ def cutout(img, size=16, color=None):
 
     cutout_img = tf.concat([top, between, bottom], axis=0)
     return cutout_img
+
+
+@tf.function
+def solarize(img, threshold):
+    img = tf.convert_to_tensor(img)
+    threshold = tf.cast(threshold, img.dtype)
+
+    inverted_img = invert(img)
+    mask = img > threshold
+
+    solarized_img = tf.where(mask, img, inverted_img)
+    return solarized_img
