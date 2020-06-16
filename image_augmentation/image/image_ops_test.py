@@ -3,7 +3,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from PIL import Image, ImageOps
 
-from image_augmentation.image.image_ops import invert, solarize
+from image_augmentation.image.image_ops import invert, solarize, cutout
 
 
 def _rand_image():
@@ -34,9 +34,8 @@ def test_invert():
 
 
 def test_solarize():
-    threshold = 128
-
     img = _rand_image()
+    threshold = 128
     sol_img = solarize(img, threshold)
 
     pil_img = Image.fromarray(img.numpy())
@@ -44,3 +43,16 @@ def test_solarize():
 
     _display_images(img, sol_img)
     assert tf.reduce_all(sol_img == pil_sol_img)
+
+
+def test_cutout():
+    img = _rand_image()
+    cut_img = cutout(img)
+
+    _display_images(img, cut_img)
+
+    gray = [128, ] * 3
+    gray = tf.cast(gray, cut_img.dtype)
+
+    # TODO: (warning!) improve this test to include more rigour
+    assert tf.reduce_any(cut_img == gray)
