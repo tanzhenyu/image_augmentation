@@ -6,13 +6,8 @@ GRAY = 128
 @tf.function
 def invert(img):
     img = tf.convert_to_tensor(img)
-    orig_dtype = img.dtype
 
-    img = tf.cast(img, tf.int16)
-
-    inv_img = (img * -1) + 255
-    inv_img = tf.cast(inv_img, orig_dtype)
-
+    inv_img = 255 - img
     return inv_img
 
 
@@ -57,5 +52,5 @@ def solarize(img, threshold):
     inverted_img = invert(img)
     mask = img > threshold
 
-    solarized_img = tf.where(mask, img, inverted_img)
+    solarized_img = tf.where(mask, inverted_img, img)
     return solarized_img
