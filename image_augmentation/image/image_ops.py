@@ -54,3 +54,8 @@ def solarize(img, threshold):
 
     solarized_img = tf.where(mask, img, inverted_img)
     return solarized_img
+
+
+@tf.function
+def posterize(img, num_bits=8):
+    raise NotImplementedError()

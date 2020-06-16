@@ -3,7 +3,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from PIL import Image, ImageOps
 
-from image_augmentation.image.image_ops import invert, solarize, cutout
+from image_augmentation.image.image_ops import invert, solarize, cutout, posterize
 
 
 def _rand_image():
@@ -56,3 +56,16 @@ def test_cutout():
 
     # TODO: (warning!) improve this test to include more rigour
     assert tf.reduce_any(cut_img == gray)
+
+
+def test_posterize():
+    img = _rand_image()
+    bits = 6
+    post_img = posterize(img, bits)
+
+    _display_images(img, post_img)
+
+    pil_img = Image.fromarray(img.numpy())
+    pil_post_img = np.array(ImageOps.posterize(pil_img, bits))
+
+    assert tf.reduce_all(post_img == pil_post_img)
