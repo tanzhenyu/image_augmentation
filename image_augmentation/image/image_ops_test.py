@@ -1,40 +1,46 @@
 import tensorflow as tf
+import numpy as np
 from matplotlib import pyplot as plt
+from PIL import Image, ImageOps
 
 from image_augmentation.image.image_ops import invert, solarize
 
 
-def test_invert():
-    path = "/Users/swg/Desktop/a.jpg"
+def _rand_image():
+    img = tf.random.uniform([32, 32, 3], 0, 256, dtype=tf.int32)
+    img = tf.cast(img, tf.uint8)
+    return img
 
-    img = tf.io.read_file(path)
-    img = tf.image.decode_jpeg(img)
 
-    inverted_img = invert(img)
-
+def _display_images(img1, img2):
     plt.subplot(1, 2, 1)
-    plt.imshow(img)
+    plt.imshow(img1)
 
     plt.subplot(1, 2, 2)
-    plt.imshow(inverted_img)
+    plt.imshow(img2)
 
     plt.show()
-    assert True
+
+
+def test_invert():
+    img = _rand_image()
+    inv_img = invert(img)
+
+    pil_img = Image.fromarray(img.numpy())
+    pil_inv_img = np.array(ImageOps.invert(pil_img))
+
+    _display_images(img, inv_img)
+    assert tf.reduce_all(inv_img == pil_inv_img)
 
 
 def test_solarize():
-    path = "/Users/swg/Desktop/a.jpg"
+    threshold = 128
 
-    img = tf.io.read_file(path)
-    img = tf.image.decode_jpeg(img)
+    img = _rand_image()
+    sol_img = solarize(img, threshold)
 
-    solarized_img = solarize(img, 130)
+    pil_img = Image.fromarray(img.numpy())
+    pil_sol_img = np.array(ImageOps.solarize(pil_img, threshold))
 
-    plt.subplot(1, 2, 1)
-    plt.imshow(img)
-
-    plt.subplot(1, 2, 2)
-    plt.imshow(solarized_img)
-
-    plt.show()
-    assert True
+    _display_images(img, sol_img)
+    assert tf.reduce_all(sol_img == pil_sol_img)
