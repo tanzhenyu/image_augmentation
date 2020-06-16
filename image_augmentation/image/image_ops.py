@@ -57,5 +57,14 @@ def solarize(img, threshold):
 
 
 @tf.function
-def posterize(img, num_bits=8):
-    raise NotImplementedError()
+def posterize(img, num_bits):
+    img = tf.convert_to_tensor(img)
+    img = tf.cast(img, tf.uint8)
+
+    num_bits = tf.cast(num_bits, tf.int32)
+    mask = tf.cast(2 ** (8 - num_bits) - 1, tf.uint8)
+    mask = tf.bitwise.invert(mask)
+
+    posterized_img = tf.bitwise.bitwise_and(img, mask)
+    return posterized_img
+

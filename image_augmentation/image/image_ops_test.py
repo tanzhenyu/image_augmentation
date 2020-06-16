@@ -60,7 +60,7 @@ def test_cutout():
 
 def test_posterize():
     img = _rand_image()
-    bits = 6
+    bits = 2
     post_img = posterize(img, bits)
 
     _display_images(img, post_img)
