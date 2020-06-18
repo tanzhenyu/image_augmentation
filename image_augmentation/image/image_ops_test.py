@@ -3,7 +3,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from PIL import Image, ImageOps
 
-from image_augmentation.image.image_ops import invert, solarize, cutout, posterize
+from image_augmentation.image.image_ops import invert, solarize, cutout, posterize, equalize
 
 
 def _rand_image():
@@ -69,3 +69,17 @@ def test_posterize():
     pil_post_img = np.array(ImageOps.posterize(pil_img, bits))
 
     assert tf.reduce_all(post_img == pil_post_img)
+
+
+def test_equalize():
+    img = tf.random.uniform([32, 32, 1], 0, 256, dtype=tf.int32)
+    img = tf.cast(img, tf.uint8)
+
+    eq_img = equalize(img)
+
+    _display_images(img[:, :, 0], eq_img[:, :, 0])
+
+    pil_img = Image.fromarray(img.numpy()[:, :, 0])
+    pil_eq_img = np.array(ImageOps.equalize(pil_img))
+
+    assert tf.reduce_all(eq_img[:, :, 0] == pil_eq_img)

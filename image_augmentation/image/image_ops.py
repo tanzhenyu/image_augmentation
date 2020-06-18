@@ -73,18 +73,23 @@ def posterize(img, num_bits):
 def equalize(img):
     img = tf.convert_to_tensor(img)
     orig_dtype = img.dtype
-    rank = tf.rank(img)
+    orig_shape = tf.shape(img)
+    img = tf.cast(img, tf.int32)
 
-    img = tf.cast(img, tf.float32)
+    bins = 256
 
-    apply_axis = tf.range(0, rank - 1)
-    min_val, max_val = tf.reduce_min(img, apply_axis), tf.reduce_max(img, apply_axis)
+    histogram = tf.math.bincount(img, minlength=bins)
+    num_pixels = tf.reduce_sum(histogram)
+    norm_histogram = tf.cast(histogram, tf.float32) / tf.cast(num_pixels, tf.float32)
 
-    scaled_img = img - min_val
-    scaled_img = scaled_img / (max_val - min_val)
+    cumulative_histogram = tf.math.cumsum(norm_histogram)
+    equalized_histogram = cumulative_histogram * bins
+    equalized_histogram = tf.math.round(equalized_histogram)
+    equalized_histogram = tf.cast(equalized_histogram, tf.int32)
 
-    white = 255
-    equalized_img = scaled_img * white
-    equalized_img = tf.cast(equalized_img, orig_dtype)
+    flat_img = tf.reshape(img, [tf.reduce_prod(tf.shape(img))])
+    equalized_flat_img = tf.gather(equalized_histogram, flat_img)
+    equalized_flat_img = tf.cast(equalized_flat_img, orig_dtype)
 
+    equalized_img = tf.reshape(equalized_flat_img, orig_shape)
     return equalized_img
