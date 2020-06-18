@@ -87,9 +87,10 @@ def equalize(img):
     equalized_histogram = tf.math.round(equalized_histogram)
     equalized_histogram = tf.cast(equalized_histogram, tf.int32)
 
-    flat_img = tf.reshape(img, [tf.reduce_prod(tf.shape(img))])
+    flat_img = tf.reshape(img, [tf.reduce_prod(orig_shape)])
     equalized_flat_img = tf.gather(equalized_histogram, flat_img)
     equalized_flat_img = tf.cast(equalized_flat_img, orig_dtype)
 
     equalized_img = tf.reshape(equalized_flat_img, orig_shape)
     return equalized_img
+
