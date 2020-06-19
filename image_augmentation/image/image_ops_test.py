@@ -72,14 +72,13 @@ def test_posterize():
 
 
 def test_equalize():
-    img = tf.random.uniform([32, 32, 1], 0, 256, dtype=tf.int32)
-    img = tf.cast(img, tf.uint8)
+    img = _rand_image()
 
     eq_img = equalize(img)
 
-    _display_images(img[:, :, 0], eq_img[:, :, 0])
+    _display_images(img, eq_img)
 
-    pil_img = Image.fromarray(img.numpy()[:, :, 0])
+    pil_img = Image.fromarray(img.numpy())
     pil_eq_img = np.array(ImageOps.equalize(pil_img))
 
-    assert tf.reduce_all(eq_img[:, :, 0] == pil_eq_img)
+    assert tf.reduce_all(eq_img == pil_eq_img)
