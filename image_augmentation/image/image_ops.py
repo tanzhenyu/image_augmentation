@@ -105,6 +105,6 @@ def equalize(img):
         eq_array = eq_array.write(channel, equalized)
 
     equalized_img = eq_array.stack()
-    equalized_img = tf.transpose(equalized_img, [2, 1, 0])
+    equalized_img = tf.transpose(equalized_img, [1, 2, 0])  # channels first to channels last
     equalized_img = tf.cast(equalized_img, orig_dtype)
     return equalized_img
