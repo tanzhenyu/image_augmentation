@@ -86,7 +86,7 @@ def test_equalize():
 
 def test_auto_contrast():
     img = _rand_image()
-    ac_img = auto_contrast()
+    ac_img = auto_contrast(img)
 
     pil_img = Image.fromarray(img.numpy())
     pil_ac_img = np.array(ImageOps.autocontrast(pil_img))
@@ -101,7 +101,9 @@ def test_sharpen():
     sharpened_img = sharpen(img, factor)
 
     pil_img = Image.fromarray(img.numpy())
-    pil_sharpened_img = np.array(ImageEnhance.Sharpness(pil_img).enhance(factor))
+    pil_sharpened_img = np.array(
+        ImageEnhance.Sharpness(pil_img).enhance(factor)
+    )
 
     _display_images(img, sharpened_img)
     assert tf.reduce_all(sharpened_img == pil_sharpened_img)

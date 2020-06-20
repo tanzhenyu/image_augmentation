@@ -2,7 +2,6 @@ import tensorflow as tf
 
 GRAY = 128
 
-
 @tf.function
 def invert(img):
     img = tf.convert_to_tensor(img)
@@ -111,7 +110,18 @@ def equalize(img):
 
 @tf.function
 def auto_contrast(img):
-    return img
+    img = tf.convert_to_tensor(img)
+    orig_dtype = img.dtype
+
+    img = tf.cast(img, tf.float32)
+    min_val, max_val = tf.reduce_min(img, axis=[0, 1]), tf.reduce_max(img, axis=[0, 1])
+
+    bright = 255
+
+    norm_img = (img - min_val) / (max_val - min_val)
+    norm_img = norm_img * bright
+    norm_img = tf.cast(norm_img, orig_dtype)
+    return norm_img
 
 
 @tf.function
