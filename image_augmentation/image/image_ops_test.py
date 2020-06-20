@@ -4,7 +4,7 @@ from matplotlib import pyplot as plt
 from PIL import Image, ImageOps, ImageEnhance
 
 from image_augmentation.image.image_ops import invert, solarize, cutout, posterize, equalize
-from image_augmentation.image.image_ops import auto_contrast, sharpen, colorize, shear, sample_pairing
+from image_augmentation.image.image_ops import auto_contrast, sharpen, color, shear, sample_pairing
 
 
 def _rand_image():
@@ -93,6 +93,20 @@ def test_auto_contrast():
 
     _display_images(img, ac_img)
     assert tf.reduce_all(ac_img == pil_ac_img)
+
+
+def test_color():
+    img = _rand_image()
+    factor = 0.5
+    colored_img = color(img, factor)
+
+    pil_img = Image.fromarray(img.numpy())
+    pil_colored_img = np.array(
+        ImageEnhance.Color(pil_img).enhance(factor)
+    )
+
+    _display_images(img, colored_img)
+    assert tf.reduce_all(colored_img == pil_colored_img)
 
 
 def test_sharpen():

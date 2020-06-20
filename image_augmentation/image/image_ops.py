@@ -125,12 +125,38 @@ def auto_contrast(img):
 
 
 @tf.function
-def sharpen(img, magnitude):
-    return img
+def blend(img1, img2, factor):
+    img1 = tf.convert_to_tensor(img1)
+    img2 = tf.convert_to_tensor(img2)
+
+    orig_dtype = img1.dtype
+
+    if factor == 0.0:
+        return img1
+    elif factor == 1.0:
+        return img2
+
+    img1, img2 = tf.cast(img1, tf.float32), tf.cast(img2, tf.float32)
+    scaled_diff = (img1 - img2) / factor
+
+    blended_img = img1 + scaled_diff
+    blended_img = tf.cast(blended_img, orig_dtype)
+    return blended_img
 
 
 @tf.function
-def colorize(img, magnitude):
+def color(img, magnitude):
+    img = tf.convert_to_tensor(img)
+    orig_dtype = img.dtype
+    grayed_img = tf.image.grayscale_to_rgb(tf.image.rgb_to_grayscale(img))
+
+    colored_img = blend(grayed_img, img, magnitude)
+    colored_img = tf.cast(colored_img, orig_dtype)
+    return colored_img
+
+
+@tf.function
+def sharpen(img, magnitude):
     return img
 
 
