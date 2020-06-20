@@ -23,7 +23,7 @@ Implementation of WideResNet(s) using `tf.keras`.
     - conv4: `64 x 10 = 640`
 
 **WRN-40-2**, `n = 40`, `k = 2`
-- number of residual blocks = `(n - 6) / 4` = `(28 - 6) / 4` = `4` blocks
+- number of residual blocks = `(n - 6) / 4` = `(40 - 6) / 4` = `6` blocks
 - number of filters =
     - conv1: `16`
     - conv2: `16 x 2 = 32`
