@@ -1,6 +1,6 @@
 # Image Pipelining
 
-## Image Op(s)
+**Image Op(s)**
 
 The following is the list of image processing operations and their current implementation status.
 
@@ -17,6 +17,6 @@ The following is the list of image processing operations and their current imple
 | **Shear** | Shear the image along the horizontal / vertical axis with rate `magnitude`. | ❌ WIP |  | N/A |
 | **Sample Pairing** | Linearly add the image with another image (selected at random from the same mini-batch) with weight magnitude, without changing the label. (https://arxiv.org/abs/1801.02929) | ❌ WIP |  | N/A |
 
-## Image Pipeline
+**Image Pipeline**
 
 Coming soon.
