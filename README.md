@@ -26,13 +26,14 @@ This project is currently a work in progress and includes the following componen
 ## Datasets
 
 The following are the list of datasets that we're currently looking at for augmentation policy search:
-1. [CIFAR-10](https://www.tensorflow.org/datasets/catalog/cifar10) & Reduced CIFAR-10
+1. [CIFAR-10](https://www.tensorflow.org/datasets/catalog/cifar10), Reduced CIFAR-10
 2. [CIFAR-100](https://www.tensorflow.org/datasets/catalog/cifar100)
-3. [SVHN](https://www.tensorflow.org/datasets/catalog/svhn_cropped) & Reduced SVHN
+3. [SVHN](https://www.tensorflow.org/datasets/catalog/svhn_cropped), Reduced SVHN
 4. [ImageNet (ILSVRC 2012)](http://image-net.org/)
 
 ## Installation
 
+The pre-requisites for this project include installation of `tf-nightly`, which packages nightly builds (unstable pre-releases) of the TensorFlow framework. 
 ```bash
 git clone https://github.com/tanzhenyu/image_augmentation
 pip3 install -r requirements.txt
@@ -41,7 +42,7 @@ cd image_augmentation && python3 setup.py install
 
 ## Tests
 
-Prior to installation, the tests can be run as follows:
+Post installation, the tests can be run as follows:
 
 ```bash
 pip3 install pytest pipenv
