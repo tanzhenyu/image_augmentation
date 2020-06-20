@@ -107,3 +107,28 @@ def equalize(img):
     equalized_img = tf.transpose(equalized_img, [1, 2, 0])  # channels first to channels last
     equalized_img = tf.cast(equalized_img, orig_dtype)
     return equalized_img
+
+
+@tf.function
+def auto_contrast(img):
+    return img
+
+
+@tf.function
+def sharpen(img, magnitude):
+    return img
+
+
+@tf.function
+def colorize(img, magnitude):
+    return img
+
+
+@tf.function
+def shear(img, x_magnitude, y_magnitude):
+    return img
+
+
+@tf.function
+def sample_pairing(img1, img2, weight):
+    return (weight * img1) + (1 - weight) * img2

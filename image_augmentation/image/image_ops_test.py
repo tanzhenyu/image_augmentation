@@ -1,9 +1,10 @@
 import tensorflow as tf
 import numpy as np
 from matplotlib import pyplot as plt
-from PIL import Image, ImageOps
+from PIL import Image, ImageOps, ImageEnhance
 
 from image_augmentation.image.image_ops import invert, solarize, cutout, posterize, equalize
+from image_augmentation.image.image_ops import auto_contrast, sharpen, colorize, shear, sample_pairing
 
 
 def _rand_image():
@@ -73,8 +74,6 @@ def test_posterize():
 
 def test_equalize():
     img = tf.random.normal([32, 32, 3], 127, 10)
-
-
     eq_img = equalize(img)
 
     _display_images(img, eq_img)
@@ -85,4 +84,24 @@ def test_equalize():
     assert tf.reduce_all(eq_img == pil_eq_img)
 
 
-def test_
+def test_auto_contrast():
+    img = _rand_image()
+    ac_img = auto_contrast()
+
+    pil_img = Image.fromarray(img.numpy())
+    pil_ac_img = np.array(ImageOps.autocontrast(pil_img))
+
+    _display_images(img, ac_img)
+    assert tf.reduce_all(ac_img == pil_ac_img)
+
+
+def test_sharpen():
+    img = _rand_image()
+    factor = 0.5
+    sharpened_img = sharpen(img, factor)
+
+    pil_img = Image.fromarray(img.numpy())
+    pil_sharpened_img = np.array(ImageEnhance.Sharpness(pil_img).enhance(factor))
+
+    _display_images(img, sharpened_img)
+    assert tf.reduce_all(sharpened_img == pil_sharpened_img)
