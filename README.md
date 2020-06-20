@@ -8,9 +8,9 @@ In this repository, we provide implementation for the following research papers 
 
 ## Components
 This project is currently a work in progress and includes the following components as of now.
-- [WideResNet(s)](./wide_resnet)
+- [WideResNet(s)](./image_augmentation/wide_resnet)
     - Wide Residual Networks (https://arxiv.org/abs/1605.07146)
-- [Image Ops(s)](./image)
+- [Image Ops(s)](./image_augmentation/image)
     - Invert
     - Cutout (https://arxiv.org/abs/1708.04552)
     - Posterize
@@ -21,7 +21,7 @@ This project is currently a work in progress and includes the following componen
     - Color
     - Shear
     - Sample Pairing (https://arxiv.org/abs/1801.02929)
-- [Pre-processing](./preprocessing) using Baseline Augmentation and Standardization or Rescaling
+- [Pre-processing](./image_augmentation/preprocessing) using Baseline Augmentation and Standardization or Rescaling
 
 ## Datasets
 
