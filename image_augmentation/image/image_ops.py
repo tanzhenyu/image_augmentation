@@ -79,12 +79,11 @@ def _equalize_grayscale(img):
     norm_histogram = tf.cast(histogram, tf.float32) / tf.cast(num_pixels, tf.float32)
 
     cumulative_histogram = tf.math.cumsum(norm_histogram)
-    equalized_histogram = cumulative_histogram * (bins - 1)
-    equalized_histogram = tf.math.round(equalized_histogram)
-    equalized_histogram = tf.cast(equalized_histogram, tf.int32)
+    levels = tf.math.round(cumulative_histogram * (bins - 1))
+    levels = tf.cast(levels, tf.int32)
 
     flat_img = tf.reshape(img, [tf.reduce_prod(orig_shape)])
-    equalized_flat_img = tf.gather(equalized_histogram, flat_img)
+    equalized_flat_img = tf.gather(levels, flat_img)
     equalized_flat_img = tf.cast(equalized_flat_img, tf.int32)
 
     equalized_img = tf.reshape(equalized_flat_img, orig_shape)
