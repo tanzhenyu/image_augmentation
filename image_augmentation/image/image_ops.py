@@ -132,14 +132,15 @@ def blend(img1, img2, factor):
     orig_dtype = img1.dtype
 
     if factor == 0.0:
-        return img1
-    elif factor == 1.0:
         return img2
+    elif factor == 1.0:
+        return img1
 
     img1, img2 = tf.cast(img1, tf.float32), tf.cast(img2, tf.float32)
-    scaled_diff = (img1 - img2) / factor
+    scaled_diff = (img2 - img1) * factor
 
     blended_img = img1 + scaled_diff
+    blended_img = tf.clip_by_value(blended_img, 0.0, 255.0)
     blended_img = tf.cast(blended_img, orig_dtype)
     return blended_img
 
