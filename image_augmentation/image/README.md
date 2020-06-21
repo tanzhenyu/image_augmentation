@@ -15,7 +15,7 @@ The following is the list of image processing operations and their current imple
 | **Sharpness** | Adjust the sharpness of the image in the `magnitude` range [0, 1]. | ❌ WIP | Compare results of applying the operation on a random image with `PIL.ImageEnhance.Sharpness.enhance`. | N/A |
 | **Color** | Adjust the color balance of the image in the `magnitude` range [0, 1]. | ✅ Implemented | Compare results of applying the operation on a random image with `PIL.ImageEnhance.Color.enhance`. | Passing |
 | **Shear** | Shear the image along the horizontal / vertical axis with rate `magnitude`. | ❌ WIP |  | N/A |
-| **Sample Pairing** | Linearly add the image with another image with weight magnitude. (https://arxiv.org/abs/1801.02929) | ❌ WIP |  | N/A |
+| **Sample Pairing** | Linearly add the image with another image with weight `magnitude`. (https://arxiv.org/abs/1801.02929) | ❌ WIP |  | N/A |
 
 **Image Pipeline**
 
