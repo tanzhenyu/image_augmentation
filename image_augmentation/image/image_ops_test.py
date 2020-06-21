@@ -84,7 +84,7 @@ def test_equalize():
     def show_histogram(channel):
         bins = 256
         channel = tf.cast(channel, tf.int32)
-        histogram = tf.math.bincount(img, minlength=bins)
+        histogram = tf.math.bincount(channel, minlength=bins)
 
         plt.figure()
         plt.bar(tf.range(256).numpy(), histogram.numpy())
