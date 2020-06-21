@@ -69,27 +69,6 @@ def posterize(img, num_bits):
 
 
 @tf.function
-def _equalize_grayscale(img):
-    orig_shape = tf.shape(img)
-    bins = 256
-
-    histogram = tf.math.bincount(img, minlength=bins)
-    num_pixels = tf.reduce_sum(histogram)
-    norm_histogram = tf.cast(histogram, tf.float32) / tf.cast(num_pixels, tf.float32)
-
-    cumulative_histogram = tf.math.cumsum(norm_histogram)
-    levels = tf.math.round(cumulative_histogram * (bins - 1))
-    levels = tf.cast(levels, tf.int32)
-
-    flat_img = tf.reshape(img, [tf.reduce_prod(orig_shape)])
-    equalized_flat_img = tf.gather(levels, flat_img)
-    equalized_flat_img = tf.cast(equalized_flat_img, tf.int32)
-
-    equalized_img = tf.reshape(equalized_flat_img, orig_shape)
-    return equalized_img
-
-
-@tf.function
 def equalize(img):
     img = tf.convert_to_tensor(img)
     orig_dtype = img.dtype
@@ -97,13 +76,38 @@ def equalize(img):
 
     img = tf.cast(img, tf.int32)
 
-    eq_array = tf.TensorArray(img.dtype, size=orig_shape[-1])
-    for channel in tf.range(orig_shape[-1]):
-        equalized = _equalize_grayscale(img[..., channel])
-        eq_array = eq_array.write(channel, equalized)
+    def equalize_grayscale(img_channel):
+        current_shape = tf.shape(img_channel)
 
-    equalized_img = eq_array.stack()
-    equalized_img = tf.transpose(equalized_img, [1, 2, 0])  # channels first to channels last
+        bins = 256
+
+        histogram = tf.math.bincount(img_channel, minlength=bins)
+        num_pixels = tf.reduce_sum(histogram)
+        norm_histogram = tf.cast(histogram, tf.float32) / tf.cast(num_pixels, tf.float32)
+
+        cumulative_histogram = tf.math.cumsum(norm_histogram)
+        levels = tf.math.round(cumulative_histogram * (bins - 1))
+        levels = tf.cast(levels, tf.int32)
+
+        flat_img = tf.reshape(img_channel, [tf.reduce_prod(current_shape)])
+        equalized_flat_img = tf.gather(levels, flat_img)
+        equalized_flat_img = tf.cast(equalized_flat_img, tf.int32)
+
+        equalized_img_channel = tf.reshape(equalized_flat_img, current_shape)
+        return equalized_img_channel
+
+    if orig_shape[-1] == 3:
+        red_channel, green_channel, blue_channel = img[..., 0], img[..., 1], img[..., 2]
+
+        red_equalized_img = equalize_grayscale(red_channel)
+        green_equalized_img = equalize_grayscale(green_channel)
+        blue_equalized_img = equalize_grayscale(blue_channel)
+
+        equalized_img = tf.stack([red_equalized_img, green_equalized_img, blue_equalized_img], axis=-1)
+
+    else:
+        equalized_img = equalize_grayscale(img)
+
     equalized_img = tf.cast(equalized_img, orig_dtype)
     return equalized_img
 

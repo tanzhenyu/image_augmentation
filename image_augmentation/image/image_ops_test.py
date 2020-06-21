@@ -74,9 +74,28 @@ def test_posterize():
 
 def test_equalize():
     img = tf.random.normal([32, 32, 3], 127, 10)
+    img = tf.math.round(img)
+    img = tf.cast(img, tf.uint8)
+
     eq_img = equalize(img)
 
     _display_images(img, eq_img)
+
+    def show_histogram(channel):
+        bins = 256
+        channel = tf.cast(channel, tf.int32)
+        histogram = tf.math.bincount(img, minlength=bins)
+
+        plt.figure()
+        plt.bar(tf.range(256).numpy(), histogram.numpy())
+
+    show_histogram(img[..., 0])
+    plt.title("Histogram of Red Channel of Original Image")
+
+    show_histogram(eq_img[..., 0])
+    plt.title("Histogram of Red Channel of Equalized Image")
+
+    plt.show()
 
     pil_img = Image.fromarray(img.numpy())
     pil_eq_img = np.array(ImageOps.equalize(pil_img))
