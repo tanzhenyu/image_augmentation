@@ -130,7 +130,7 @@ def test_color():
 
 
 def test_sharpen():
-    img = _rand_image()
+    img = tf.image.decode_jpeg(tf.io.read_file("/Users/swg/Desktop/a.jpg"))
     factor = 0.5
     sharpened_img = sharpen(img, factor)
 
@@ -140,4 +140,5 @@ def test_sharpen():
     )
 
     _display_images(img, sharpened_img)
-    assert tf.reduce_all(sharpened_img == pil_sharpened_img)
+    max_deviation = tf.reduce_max(pil_sharpened_img - sharpened_img)
+    assert tf.reduce_all(max_deviation < 5)

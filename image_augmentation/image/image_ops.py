@@ -176,10 +176,19 @@ def sharpen(img, magnitude):
 
     # add extra dimension to img before conv
     blurred_img = tf.nn.depthwise_conv2d(img[None, ...], blur_kernel,
-                                         strides, padding="SAME")
+                                         strides, padding="VALID")
     blurred_img = tf.clip_by_value(blurred_img, 0., 255.)
     # remove extra dimension
     blurred_img = blurred_img[0]
+
+    mask = tf.ones_like(blurred_img)
+    extra_padding = tf.constant([[1, 1],
+                                 [1, 1],
+                                 [0, 0]], tf.int32)
+    padded_mask = tf.pad(mask, extra_padding)
+    padded_blurred_img = tf.pad(blurred_img, extra_padding)
+
+    blurred_img = tf.where(padded_mask == 1, padded_blurred_img, img)
 
     sharpened_img = blend(blurred_img, img, magnitude)
     sharpened_img = tf.cast(sharpened_img, orig_dtype)
