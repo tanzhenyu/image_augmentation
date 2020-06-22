@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-GRAY = 128
+GRAY = tf.constant(128)
 
 @tf.function
 def invert(img):
@@ -79,11 +79,13 @@ def equalize(img):
     def equalize_grayscale(img_channel):
         current_shape = tf.shape(img_channel)
 
-        bins = 256
+        bins = tf.constant(256, tf.int32)
 
         histogram = tf.math.bincount(img_channel, minlength=bins)
         num_pixels = tf.reduce_sum(histogram)
         norm_histogram = tf.cast(histogram, tf.float32) / tf.cast(num_pixels, tf.float32)
+
+        bins = tf.cast(bins, tf.float32)
 
         cumulative_histogram = tf.math.cumsum(norm_histogram)
         levels = tf.math.round(cumulative_histogram * (bins - 1))
@@ -120,7 +122,7 @@ def auto_contrast(img):
     img = tf.cast(img, tf.float32)
     min_val, max_val = tf.reduce_min(img, axis=[0, 1]), tf.reduce_max(img, axis=[0, 1])
 
-    bright = 255
+    bright = tf.constant(255., tf.float32)
 
     norm_img = (img - min_val) / (max_val - min_val)
     norm_img = norm_img * bright
