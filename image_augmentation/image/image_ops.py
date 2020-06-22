@@ -202,4 +202,4 @@ def shear(img, x_magnitude, y_magnitude):
 
 @tf.function
 def sample_pairing(img1, img2, weight):
-    return (weight * img1) + (1 - weight) * img2
+    return blend(img1, img2, weight)
