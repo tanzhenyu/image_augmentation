@@ -164,7 +164,26 @@ def color(img, magnitude):
 
 @tf.function
 def sharpen(img, magnitude):
-    return img
+    img = tf.convert_to_tensor(img)
+    orig_dtype = img.dtype
+    img = tf.cast(img, tf.float32)
+
+    blur_kernel = tf.constant([[1, 1, 1],
+                               [1, 5, 1],
+                               [1, 1, 1]], tf.float32, shape=[3, 3, 1, 1]) / 13
+    blur_kernel = tf.tile(blur_kernel, [1, 1, 3, 1])
+    strides = [1, 1, 1, 1]
+
+    # add extra dimension to img before conv
+    blurred_img = tf.nn.depthwise_conv2d(img[None, ...], blur_kernel,
+                                         strides, padding="SAME")
+    blurred_img = tf.clip_by_value(blurred_img, 0., 255.)
+    # remove extra dimension
+    blurred_img = blurred_img[0]
+
+    sharpened_img = blend(blurred_img, img, magnitude)
+    sharpened_img = tf.cast(sharpened_img, orig_dtype)
+    return sharpened_img
 
 
 @tf.function
