@@ -142,3 +142,28 @@ def test_sharpen():
     _display_images(img, sharpened_img)
     max_deviation = tf.reduce_max(pil_sharpened_img - sharpened_img)
     assert tf.reduce_all(max_deviation < 5)
+
+
+def test_sample_pairing():
+    img1 = tf.image.decode_jpeg(
+        tf.io.read_file("/Volumes/Card/Datasets/flower_photos/roses/5060536705_b370a5c543_n.jpg"))
+    img2 = tf.image.decode_jpeg(
+        tf.io.read_file("/Volumes/Card/Datasets/flower_photos/daisy/2365428551_39f83f10bf_n.jpg"))
+
+    paired_img = sample_pairing(img1, img2, 0.5)
+
+    plt.figure()
+
+    plt.subplot(1, 2, 1)
+    plt.imshow(img1.numpy())
+    plt.title("Image 1")
+
+    plt.subplot(1, 2, 2)
+    plt.imshow(img2.numpy())
+    plt.title("Image 2")
+
+    plt.figure()
+    plt.imshow(paired_img.numpy())
+    plt.title("Applying SamplePairing on Image 1 and Image 2")
+
+    plt.show()
