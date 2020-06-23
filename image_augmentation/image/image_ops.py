@@ -197,12 +197,16 @@ def sharpness(image, magnitude):
 
 
 @tf.function
-def shear(image, x_magnitude, y_magnitude):
-    return image
-
-
-@tf.function
 def sample_pairing(image1, image2, weight):
     paired_image = blend(image1, image2, weight)
     paired_image = tf.cast(paired_image, image1.dtype)
     return paired_image
+
+
+@tf.function
+def brightness(image, magnitude):
+    image = tf.convert_to_tensor(image)
+    dark = tf.zeros_like(image)
+
+    bright_image = blend(dark, image, magnitude)
+    return bright_image

@@ -4,7 +4,7 @@ from matplotlib import pyplot as plt
 from PIL import Image, ImageOps, ImageEnhance
 
 from image_augmentation.image.image_ops import invert, solarize, cutout, posterize, equalize
-from image_augmentation.image.image_ops import auto_contrast, sharpness, color, sample_pairing
+from image_augmentation.image.image_ops import auto_contrast, sharpness, color, sample_pairing, brightness
 
 
 def _rand_image():
@@ -167,3 +167,18 @@ def test_sample_pairing():
     plt.title("Applying SamplePairing on Image 1 and Image 2")
 
     plt.show()
+
+
+def test_brightness():
+    image = _rand_image()
+    factor = 0.5
+    bright_image = brightness(image, factor)
+
+    pil_image = Image.fromarray(image.numpy())
+    pil_bright_image = np.array(
+        ImageEnhance.Brightness(pil_image).enhance(factor)
+    )
+
+    _display_images(image, bright_image)
+    max_deviation = tf.reduce_max(pil_bright_image - bright_image)
+    assert tf.reduce_all(max_deviation < 1)
