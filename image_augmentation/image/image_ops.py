@@ -212,7 +212,7 @@ def brightness(image, magnitude):
     return bright_image
 
 
-@tf.function
+# @tf.function
 def contrast(image, magnitude):
     image = tf.convert_to_tensor(image)
     orig_dtype = image.dtype
@@ -223,8 +223,11 @@ def contrast(image, magnitude):
     bins = tf.constant(256, tf.int32)
     histogram = tf.math.bincount(grayed_image, minlength=bins)
     histogram = tf.cast(histogram, tf.float32)
-    mean = tf.reduce_mean(histogram)
+    mean = tf.reduce_sum(tf.cast(grayed_image, tf.float32)) / tf.reduce_sum(histogram)
+    mean = tf.clip_by_value(mean, 0.0, 255.0)
+
     mean_image = tf.ones_like(grayed_image, tf.float32) * mean
+    mean_image = tf.cast(mean_image, tf.uint8)
     mean_image = tf.image.grayscale_to_rgb(mean_image)
 
     contrast_image = blend(mean_image, image, magnitude)
