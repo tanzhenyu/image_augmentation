@@ -2,6 +2,7 @@ import tensorflow as tf
 
 GRAY = tf.constant(128)
 
+
 @tf.function
 def invert(image):
     image = tf.convert_to_tensor(image)
@@ -163,7 +164,7 @@ def color(image, magnitude):
 
 
 @tf.function
-def sharpen(image, magnitude):
+def sharpness(image, magnitude):
     image = tf.convert_to_tensor(image)
     orig_dtype = image.dtype
     image = tf.cast(image, tf.float32)
@@ -205,4 +206,3 @@ def sample_pairing(image1, image2, weight):
     paired_image = blend(image1, image2, weight)
     paired_image = tf.cast(paired_image, image1.dtype)
     return paired_image
-

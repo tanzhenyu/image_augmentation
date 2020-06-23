@@ -4,7 +4,7 @@ from matplotlib import pyplot as plt
 from PIL import Image, ImageOps, ImageEnhance
 
 from image_augmentation.image.image_ops import invert, solarize, cutout, posterize, equalize
-from image_augmentation.image.image_ops import auto_contrast, sharpen, color, shear, sample_pairing
+from image_augmentation.image.image_ops import auto_contrast, sharpness, color, sample_pairing
 
 
 def _rand_image():
@@ -129,10 +129,10 @@ def test_color():
     assert tf.reduce_all(max_deviation < 5)
 
 
-def test_sharpen():
+def test_sharpness():
     image = tf.image.decode_jpeg(tf.io.read_file("/Users/swg/Desktop/a.jpg"))
     factor = 0.5
-    sharpened_image = sharpen(image, factor)
+    sharpened_image = sharpness(image, factor)
 
     pil_image = Image.fromarray(image.numpy())
     pil_sharpened_image = np.array(
