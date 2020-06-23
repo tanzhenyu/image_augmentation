@@ -11,16 +11,20 @@ This project is currently a work in progress and includes the following componen
 - [WideResNet(s)](./image_augmentation/wide_resnet)
     - Wide Residual Networks (https://arxiv.org/abs/1605.07146)
 - [Image Ops(s)](./image_augmentation/image)
-    - Invert
-    - Cutout (https://arxiv.org/abs/1708.04552)
-    - Posterize
-    - Solarize
-    - Equalize
+    - Shear X/Y
+    - Translate X/Y
+    - Rotate 
     - AutoContrast
-    - Sharpness
+    - Invert 
+    - Equalize 
+    - Solarize 
+    - Posterize Contrast
     - Color
-    - Shear
+    - Brightness
+    - Sharpness
+    - Cutout (https://arxiv.org/abs/1708.04552)
     - Sample Pairing (https://arxiv.org/abs/1801.02929)
+    
 - [Pre-processing](./image_augmentation/preprocessing) using Baseline Augmentation and Standardization or Rescaling
 
 ## Datasets
