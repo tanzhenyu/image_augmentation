@@ -136,7 +136,7 @@ def blend(image1, image2, factor):
     image1 = tf.convert_to_tensor(image1)
     image2 = tf.convert_to_tensor(image2)
 
-    orig_dtype = image1.dtype
+    orig_dtype = image2.dtype
 
     if factor == 0.0:
         return image1
@@ -210,3 +210,23 @@ def brightness(image, magnitude):
 
     bright_image = blend(dark, image, magnitude)
     return bright_image
+
+
+@tf.function
+def contrast(image, magnitude):
+    image = tf.convert_to_tensor(image)
+    orig_dtype = image.dtype
+
+    grayed_image = tf.image.rgb_to_grayscale(image)
+    grayed_image = tf.cast(grayed_image, tf.int32)
+
+    bins = tf.constant(256, tf.int32)
+    histogram = tf.math.bincount(grayed_image, minlength=bins)
+    histogram = tf.cast(histogram, tf.float32)
+    mean = tf.reduce_mean(histogram)
+    mean_image = tf.ones_like(grayed_image, tf.float32) * mean
+    mean_image = tf.image.grayscale_to_rgb(mean_image)
+
+    contrast_image = blend(mean_image, image, magnitude)
+    contrast_image = tf.cast(contrast_image, orig_dtype)
+    return contrast_image

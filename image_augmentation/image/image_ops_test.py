@@ -3,8 +3,8 @@ import numpy as np
 from matplotlib import pyplot as plt
 from PIL import Image, ImageOps, ImageEnhance
 
-from image_augmentation.image.image_ops import invert, solarize, cutout, posterize, equalize
-from image_augmentation.image.image_ops import auto_contrast, sharpness, color, sample_pairing, brightness
+from image_augmentation.image.image_ops import invert, solarize, cutout, posterize, equalize, auto_contrast
+from image_augmentation.image.image_ops import sharpness, color, sample_pairing, brightness, contrast
 
 
 def _rand_image():
@@ -182,3 +182,18 @@ def test_brightness():
     _display_images(image, bright_image)
     max_deviation = tf.reduce_max(pil_bright_image - bright_image)
     assert tf.reduce_all(max_deviation < 1)
+
+
+def test_contrast():
+    image = tf.image.decode_jpeg((tf.io.read_file("/Users/swg/Desktop/a.jpg")))
+    factor = 2.0
+    contrast_image = contrast(image, factor)
+
+    pil_image = Image.fromarray(image.numpy())
+    pil_contrast_image = np.array(
+        ImageEnhance.Contrast(pil_image).enhance(factor)
+    )
+
+    _display_images(image, contrast_image)
+    max_deviation = tf.reduce_max(pil_contrast_image - contrast_image)
+    assert tf.reduce_all(max_deviation < 5)
