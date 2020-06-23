@@ -3,19 +3,19 @@ import tensorflow as tf
 GRAY = tf.constant(128)
 
 @tf.function
-def invert(img):
-    img = tf.convert_to_tensor(img)
+def invert(image):
+    image = tf.convert_to_tensor(image)
 
-    inv_img = 255 - img
-    return inv_img
+    inv_image = 255 - image
+    return inv_image
 
 
 @tf.function
-def cutout(img, size=16, color=None):
-    img = tf.convert_to_tensor(img)
+def cutout(image, size=16, color=None):
+    image = tf.convert_to_tensor(image)
 
-    img_shape = tf.shape(img)
-    height, width, channels = img_shape[0], img_shape[1], img_shape[2]
+    image_shape = tf.shape(image)
+    height, width, channels = image_shape[0], image_shape[1], image_shape[2]
 
     loc_x = tf.random.uniform((), 0, width, tf.int32)
     loc_y = tf.random.uniform((), 0, height, tf.int32)
@@ -27,61 +27,61 @@ def cutout(img, size=16, color=None):
         color = tf.repeat(GRAY, channels)
     else:
         color = tf.convert_to_tensor(color)
-    color = tf.cast(color, img.dtype)
+    color = tf.cast(color, image.dtype)
 
-    cut = tf.ones((uy - ly, ux - lx, channels), img.dtype)
+    cut = tf.ones((uy - ly, ux - lx, channels), image.dtype)
 
-    top = img[0: ly, 0: width]
+    top = image[0: ly, 0: width]
     between = tf.concat([
-        img[ly: uy, 0: lx],
+        image[ly: uy, 0: lx],
         cut * color,
-        img[ly: uy, ux: width]
+        image[ly: uy, ux: width]
     ], axis=1)
-    bottom = img[uy: height, 0: width]
+    bottom = image[uy: height, 0: width]
 
-    cutout_img = tf.concat([top, between, bottom], axis=0)
-    return cutout_img
-
-
-@tf.function
-def solarize(img, threshold):
-    img = tf.convert_to_tensor(img)
-    threshold = tf.cast(threshold, img.dtype)
-
-    inverted_img = invert(img)
-    mask = img < threshold
-
-    solarized_img = tf.where(mask, img, inverted_img)
-    return solarized_img
+    cutout_image = tf.concat([top, between, bottom], axis=0)
+    return cutout_image
 
 
 @tf.function
-def posterize(img, num_bits):
-    img = tf.convert_to_tensor(img)
-    img = tf.cast(img, tf.uint8)
+def solarize(image, threshold):
+    image = tf.convert_to_tensor(image)
+    threshold = tf.cast(threshold, image.dtype)
+
+    inverted_image = invert(image)
+    mask = image < threshold
+
+    solarized_image = tf.where(mask, image, inverted_image)
+    return solarized_image
+
+
+@tf.function
+def posterize(image, num_bits):
+    image = tf.convert_to_tensor(image)
+    image = tf.cast(image, tf.uint8)
 
     num_bits = tf.cast(num_bits, tf.int32)
     mask = tf.cast(2 ** (8 - num_bits) - 1, tf.uint8)
     mask = tf.bitwise.invert(mask)
 
-    posterized_img = tf.bitwise.bitwise_and(img, mask)
-    return posterized_img
+    posterized_image = tf.bitwise.bitwise_and(image, mask)
+    return posterized_image
 
 
 @tf.function
-def equalize(img):
-    img = tf.convert_to_tensor(img)
-    orig_dtype = img.dtype
-    orig_shape = tf.shape(img)
+def equalize(image):
+    image = tf.convert_to_tensor(image)
+    orig_dtype = image.dtype
+    orig_shape = tf.shape(image)
 
-    img = tf.cast(img, tf.int32)
+    image = tf.cast(image, tf.int32)
 
-    def equalize_grayscale(img_channel):
-        current_shape = tf.shape(img_channel)
+    def equalize_grayscale(image_channel):
+        current_shape = tf.shape(image_channel)
 
         bins = tf.constant(256, tf.int32)
 
-        histogram = tf.math.bincount(img_channel, minlength=bins)
+        histogram = tf.math.bincount(image_channel, minlength=bins)
         num_pixels = tf.reduce_sum(histogram)
         norm_histogram = tf.cast(histogram, tf.float32) / tf.cast(num_pixels, tf.float32)
 
@@ -91,82 +91,82 @@ def equalize(img):
         levels = tf.math.round(cumulative_histogram * (bins - 1))
         levels = tf.cast(levels, tf.int32)
 
-        flat_img = tf.reshape(img_channel, [tf.reduce_prod(current_shape)])
-        equalized_flat_img = tf.gather(levels, flat_img)
-        equalized_flat_img = tf.cast(equalized_flat_img, tf.int32)
+        flat_image = tf.reshape(image_channel, [tf.reduce_prod(current_shape)])
+        equalized_flat_image = tf.gather(levels, flat_image)
+        equalized_flat_image = tf.cast(equalized_flat_image, tf.int32)
 
-        equalized_img_channel = tf.reshape(equalized_flat_img, current_shape)
-        return equalized_img_channel
+        equalized_image_channel = tf.reshape(equalized_flat_image, current_shape)
+        return equalized_image_channel
 
     if orig_shape[-1] == 3:
-        red_channel, green_channel, blue_channel = img[..., 0], img[..., 1], img[..., 2]
+        red_channel, green_channel, blue_channel = image[..., 0], image[..., 1], image[..., 2]
 
-        red_equalized_img = equalize_grayscale(red_channel)
-        green_equalized_img = equalize_grayscale(green_channel)
-        blue_equalized_img = equalize_grayscale(blue_channel)
+        red_equalized_image = equalize_grayscale(red_channel)
+        green_equalized_image = equalize_grayscale(green_channel)
+        blue_equalized_image = equalize_grayscale(blue_channel)
 
-        equalized_img = tf.stack([red_equalized_img, green_equalized_img, blue_equalized_img], axis=-1)
+        equalized_image = tf.stack([red_equalized_image, green_equalized_image, blue_equalized_image], axis=-1)
 
     else:
-        equalized_img = equalize_grayscale(img)
+        equalized_image = equalize_grayscale(image)
 
-    equalized_img = tf.cast(equalized_img, orig_dtype)
-    return equalized_img
+    equalized_image = tf.cast(equalized_image, orig_dtype)
+    return equalized_image
 
 
 @tf.function
-def auto_contrast(img):
-    img = tf.convert_to_tensor(img)
-    orig_dtype = img.dtype
+def auto_contrast(image):
+    image = tf.convert_to_tensor(image)
+    orig_dtype = image.dtype
 
-    img = tf.cast(img, tf.float32)
-    min_val, max_val = tf.reduce_min(img, axis=[0, 1]), tf.reduce_max(img, axis=[0, 1])
+    image = tf.cast(image, tf.float32)
+    min_val, max_val = tf.reduce_min(image, axis=[0, 1]), tf.reduce_max(image, axis=[0, 1])
 
     bright = tf.constant(255., tf.float32)
 
-    norm_img = (img - min_val) / (max_val - min_val)
-    norm_img = norm_img * bright
-    norm_img = tf.cast(norm_img, orig_dtype)
-    return norm_img
+    norm_image = (image - min_val) / (max_val - min_val)
+    norm_image = norm_image * bright
+    norm_image = tf.cast(norm_image, orig_dtype)
+    return norm_image
 
 
 @tf.function
-def blend(img1, img2, factor):
-    img1 = tf.convert_to_tensor(img1)
-    img2 = tf.convert_to_tensor(img2)
+def blend(image1, image2, factor):
+    image1 = tf.convert_to_tensor(image1)
+    image2 = tf.convert_to_tensor(image2)
 
-    orig_dtype = img1.dtype
+    orig_dtype = image1.dtype
 
     if factor == 0.0:
-        return img1
+        return image1
     elif factor == 1.0:
-        return img2
+        return image2
 
-    img1, img2 = tf.cast(img1, tf.float32), tf.cast(img2, tf.float32)
-    scaled_diff = (img2 - img1) * factor
+    image1, image2 = tf.cast(image1, tf.float32), tf.cast(image2, tf.float32)
+    scaled_diff = (image2 - image1) * factor
 
-    blended_img = img1 + scaled_diff
-    blended_img = tf.clip_by_value(blended_img, 0.0, 255.0)
-    blended_img = tf.cast(blended_img, orig_dtype)
-    return blended_img
-
-
-@tf.function
-def color(img, magnitude):
-    img = tf.convert_to_tensor(img)
-    orig_dtype = img.dtype
-    grayed_img = tf.image.grayscale_to_rgb(tf.image.rgb_to_grayscale(img))
-
-    colored_img = blend(grayed_img, img, magnitude)
-    colored_img = tf.cast(colored_img, orig_dtype)
-    return colored_img
+    blended_image = image1 + scaled_diff
+    blended_image = tf.clip_by_value(blended_image, 0.0, 255.0)
+    blended_image = tf.cast(blended_image, orig_dtype)
+    return blended_image
 
 
 @tf.function
-def sharpen(img, magnitude):
-    img = tf.convert_to_tensor(img)
-    orig_dtype = img.dtype
-    img = tf.cast(img, tf.float32)
+def color(image, magnitude):
+    image = tf.convert_to_tensor(image)
+    orig_dtype = image.dtype
+    grayed_image = tf.image.grayscale_to_rgb(tf.image.rgb_to_grayscale(image))
+
+    colored_image = blend(grayed_image, image, magnitude)
+    colored_image = tf.cast(colored_image, orig_dtype)
+    return colored_image
+
+
+@tf.function
+def sharpen(image, magnitude):
+    image = tf.convert_to_tensor(image)
+    orig_dtype = image.dtype
+    image = tf.cast(image, tf.float32)
 
     blur_kernel = tf.constant([[1, 1, 1],
                                [1, 5, 1],
@@ -174,35 +174,35 @@ def sharpen(img, magnitude):
     blur_kernel = tf.tile(blur_kernel, [1, 1, 3, 1])
     strides = [1, 1, 1, 1]
 
-    # add extra dimension to img before conv
-    blurred_img = tf.nn.depthwise_conv2d(img[None, ...], blur_kernel,
+    # add extra dimension to image before conv
+    blurred_image = tf.nn.depthwise_conv2d(image[None, ...], blur_kernel,
                                          strides, padding="VALID")
-    blurred_img = tf.clip_by_value(blurred_img, 0., 255.)
+    blurred_image = tf.clip_by_value(blurred_image, 0., 255.)
     # remove extra dimension
-    blurred_img = blurred_img[0]
+    blurred_image = blurred_image[0]
 
-    mask = tf.ones_like(blurred_img)
+    mask = tf.ones_like(blurred_image)
     extra_padding = tf.constant([[1, 1],
                                  [1, 1],
                                  [0, 0]], tf.int32)
     padded_mask = tf.pad(mask, extra_padding)
-    padded_blurred_img = tf.pad(blurred_img, extra_padding)
+    padded_blurred_image = tf.pad(blurred_image, extra_padding)
 
-    blurred_img = tf.where(padded_mask == 1, padded_blurred_img, img)
+    blurred_image = tf.where(padded_mask == 1, padded_blurred_image, image)
 
-    sharpened_img = blend(blurred_img, img, magnitude)
-    sharpened_img = tf.cast(sharpened_img, orig_dtype)
-    return sharpened_img
-
-
-@tf.function
-def shear(img, x_magnitude, y_magnitude):
-    return img
+    sharpened_image = blend(blurred_image, image, magnitude)
+    sharpened_image = tf.cast(sharpened_image, orig_dtype)
+    return sharpened_image
 
 
 @tf.function
-def sample_pairing(img1, img2, weight):
-    paired_img = blend(img1, img2, weight)
-    paired_img = tf.cast(paired_img, img1.dtype)
-    return paired_img
+def shear(image, x_magnitude, y_magnitude):
+    return image
+
+
+@tf.function
+def sample_pairing(image1, image2, weight):
+    paired_image = blend(image1, image2, weight)
+    paired_image = tf.cast(paired_image, image1.dtype)
+    return paired_image
 
