@@ -1,4 +1,5 @@
 from tensorflow import keras
+import tensorflow_addons as tfa
 
 from image_augmentation.wide_resnet import WideResNet
 from image_augmentation.preprocessing import cifar_standardization, cifar_baseline_augmentation
@@ -37,7 +38,7 @@ train_ds = train_ds.cache().shuffle(
 val_ds = val_ds.cache().batch(batch_size)
 
 lr_schedule = keras.experimental.CosineDecayRestarts(init_learn_rate, restart_steps)
-opt = keras.optimizers.SGD(lr_schedule, momentum=0.9, nesterov=True)
+opt = tfa.optimizers.SGDW(weight_decay, lr_schedule, momentum=0.9, nesterov=True)
 
 model.compile(opt, loss='sparse_categorical_crossentropy',
               metrics=['accuracy'])
