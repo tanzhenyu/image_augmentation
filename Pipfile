@@ -15,6 +15,7 @@ numpy = "*"
 matplotlib = "*"
 pylint = "*"
 tensorflow-datasets = "*"
+tensorflow-addons = "*"
 
 [requires]
 python_version = "3.7"
