@@ -19,7 +19,7 @@ images_only = train_ds.map(lambda image, label: image)
 wrn_40_2 = WideResNet(inp_shape, depth=40, k=2, num_classes=num_classes)
 wrn_40_2.summary()
 
-inp = keras.layers.Input(inp_shape)
+inp = keras.layers.Input(inp_shape, name='image_input')
 x = cifar_baseline_augmentation(inp)
 x = cifar_standardization(x, images_only)
 x = wrn_40_2(x)
