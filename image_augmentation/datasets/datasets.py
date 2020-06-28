@@ -46,6 +46,16 @@ def reduced_cifar10(data_dir=None):
     }
 
 
+def imagenet(data_dir=None):
+    ds, info = tfds.load('imagenet_resized/32x32', shuffle_files=True,
+                         as_supervised=True, with_info=True, data_dir=data_dir)
+    return {
+        "train_ds": ds['train'],
+        "test_ds": ds['test'],
+        "info": info
+    }
+
+
 def reduced_svhn(data_dir=None):
     ds = tfds.load('svhn_cropped', as_supervised=True, data_dir=data_dir)
     n_train = tf.data.experimental.cardinality(ds['train'])
