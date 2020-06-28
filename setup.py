@@ -3,6 +3,9 @@ import setuptools
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
+with open("requirements.txt") as req_file:
+    requirements = req_file.read().strip().split('\n')
+
 setuptools.setup(
     name="image_augmentation",
     version="0.1.0",
@@ -12,7 +15,7 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/tanzhenyu/image_augmentation",
-    packages=setuptools.find_packages(),
+    packages=setuptools.find_packages() + requirements,
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
