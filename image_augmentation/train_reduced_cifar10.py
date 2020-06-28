@@ -74,28 +74,7 @@ opt = tfa.optimizers.SGDW(weight_decay, lr_schedule,
 model.compile(opt, loss='sparse_categorical_crossentropy',
               metrics=['accuracy'])
 
-train_history = model.fit(train_ds, validation_data=val_ds, epochs=epochs)
+callbacks = [keras.callbacks.TensorBoard('./wrn-reduced-cifar10')]
 
-acc = train_history.history['accuracy']
-val_acc = train_history.history['val_accuracy']
-loss = train_history.history['loss']
-val_loss = train_history.history['val_loss']
+model.fit(train_ds, validation_data=val_ds, epochs=epochs, callbacks=callbacks)
 
-plt.figure(figsize=(8, 8))
-
-plt.subplot(2, 1, 1)
-plt.plot(acc)
-plt.plot(val_acc)
-plt.legend(['Training Accuracy', 'Validation Accuracy'], loc='lower right')
-plt.ylabel('Accuracy')
-plt.title('Accuracy')
-
-plt.subplot(2, 1, 2)
-plt.plot(loss)
-plt.plot(val_loss)
-plt.legend(['Training Loss', 'Validation Loss'], loc='upper right')
-plt.ylabel('Cross Entropy')
-plt.xlabel('Epochs')
-plt.title('Loss')
-
-plt.savefig('epoch_wise_loss_acc.png')
