@@ -9,7 +9,7 @@ COPY . .
 
 # install dependencies
 RUN pip install --upgrade pip
-RUN pip install tensorflow_datasets tensorflow_addons matplotlib
+RUN pip install tensorflow_datasets tensorflow_addons matplotlib google-cloud-storage
 RUN pip install --no-deps -e .
 
 # run training script
