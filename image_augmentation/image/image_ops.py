@@ -212,7 +212,7 @@ def brightness(image, magnitude):
     return bright_image
 
 
-# @tf.function
+@tf.function
 def contrast(image, magnitude):
     image = tf.convert_to_tensor(image)
     orig_dtype = image.dtype

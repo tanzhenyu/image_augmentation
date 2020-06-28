@@ -41,8 +41,9 @@ The pre-requisites for this project include installation of `tf-nightly` package
 
 ```bash
 git clone https://github.com/tanzhenyu/image_augmentation
+cd image_augmentation
 pip3 install -r requirements.txt
-cd image_augmentation && python3 setup.py install
+python3 setup.py install
 ```
 
 ## Tests
