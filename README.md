@@ -18,7 +18,8 @@ This project is currently a work in progress and includes the following componen
     - Invert 
     - Equalize 
     - Solarize 
-    - Posterize Contrast
+    - Posterize 
+    - Contrast
     - Color
     - Brightness
     - Sharpness
