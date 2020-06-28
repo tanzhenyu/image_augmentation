@@ -34,7 +34,7 @@ The following are the list of datasets that we're currently looking at for augme
 1. [CIFAR-10](https://www.tensorflow.org/datasets/catalog/cifar10), Reduced CIFAR-10
 2. [CIFAR-100](https://www.tensorflow.org/datasets/catalog/cifar100)
 3. [SVHN](https://www.tensorflow.org/datasets/catalog/svhn_cropped), Reduced SVHN
-4. [ImageNet (ILSVRC 2012)](http://image-net.org/)
+4. [ImageNet (ILSVRC 2012)](http://image-net.org/), Reduced ImageNet
 
 ## Installation
 
