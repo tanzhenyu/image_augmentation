@@ -40,7 +40,7 @@ plt.ylabel("Number of Samples")
 plt.ylim(0, 500)
 plt.title("Reduced CIFAR-10 Validation Distribution")
 
-plt.savefig("dataset_distribution.png")
+plt.savefig("dataset_distribution.pdf")
 
 wrn_40_2 = WideResNet(inp_shape, depth=40, k=2, num_classes=num_classes)
 wrn_40_2.summary()

@@ -19,7 +19,7 @@ train_distro, val_distro = [tf.math.bincount(
                                 minlength=num_classes)
                             for curr_ds in (train_ds, val_ds)]
 
-plt.figure(figsize=(12, 4))
+plt.figure(figsize=(15, 4))
 
 plt.subplot(1, 2, 1)
 plt.bar(tf.range(num_classes).numpy(), train_distro.numpy(), color='y')
@@ -35,7 +35,7 @@ plt.ylabel("Number of Samples")
 plt.ylim(0, 75)
 plt.title("Reduced ImageNet Validation Distribution")
 
-plt.savefig("dataset_distribution.png")
+plt.savefig("dataset_distribution.pdf")
 
 wrn_40_2 = WideResNet(inp_shape, depth=40, k=2, num_classes=num_classes)
 wrn_40_2.summary()
@@ -52,15 +52,17 @@ model.summary()
 
 batch_size = 128
 epochs = 200
+sgdr_t_0 = 10
+sgdr_t_mul = 2
 init_learn_rate = 0.1
 weight_decay = 10e-5
-decay_steps = 200
 
 train_ds = train_ds.cache().shuffle(
         1000, reshuffle_each_iteration=True).batch(batch_size)
 val_ds = val_ds.cache().batch(batch_size)
 
-lr_schedule = keras.experimental.CosineDecay(init_learn_rate, decay_steps)
+lr_schedule = keras.experimental.CosineDecayRestarts(init_learn_rate,
+                                                     sgdr_t_0, sgdr_t_mul)
 opt = tfa.optimizers.SGDW(weight_decay, lr_schedule,
                           momentum=0.9, nesterov=True)
 
