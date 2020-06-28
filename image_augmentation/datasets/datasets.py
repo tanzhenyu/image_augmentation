@@ -51,7 +51,7 @@ def imagenet(data_dir=None):
                          as_supervised=True, with_info=True, data_dir=data_dir)
     return {
         "train_ds": ds['train'],
-        "test_ds": ds['test'],
+        "val_ds": ds['validation'],
         "info": info
     }
 

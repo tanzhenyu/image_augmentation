@@ -9,7 +9,9 @@ from matplotlib import pyplot as plt
 
 from image_augmentation.wide_resnet import WideResNet
 from image_augmentation.preprocessing import imagenet_standardization, imagenet_baseline_augmentation
-from image_augmentation.datasets import reduced_imagenet
+from image_augmentation.preprocessing import cifar_standardization, cifar_baseline_augmentation
+from image_augmentation.datasets import reduced_cifar10, reduced_svhn, reduced_imagenet
+from image_augmentation.datasets import cifar10, svhn, imagenet
 
 
 def get_args():
@@ -51,6 +53,7 @@ def get_args():
     )
     parser.add_argument(
         '--data-dir',
+        required=True,
         type=str,
         help='local or GCS location for accessing data with TFDS '
              '(directory for tensorflow_datasets)'
@@ -76,8 +79,90 @@ def get_args():
     return args
 
 
+NUM_CLASSES = {
+    "cifar10": 10,
+    "reduced_cifar10": 10,
+    "svhn": 10,
+    "reduced_svhn": 10,
+    "imagenet": 1000,
+    "reduced_imagenet": 120
+}
+
+BASELINE_METHOD = {
+    "cifar10": (cifar_baseline_augmentation, cifar_standardization),
+    "reduced_cifar10": (cifar_baseline_augmentation, cifar_standardization),
+    "svhn": (cifar_baseline_augmentation, cifar_standardization),
+    "reduced_svhn": (cifar_baseline_augmentation, cifar_standardization),
+    "imagenet": (imagenet_baseline_augmentation, imagenet_standardization),
+    "reduced_imagenet": (imagenet_baseline_augmentation, imagenet_standardization)
+}
+
+DATASET = {
+    "cifar10": cifar10,
+    "reduced_cifar10": reduced_cifar10,
+    "svhn": svhn,
+    "reduced_svhn": reduced_svhn,
+    "imagenet": imagenet,
+    "reduced_imagenet": reduced_imagenet
+}
+
+SGDR_T0 = 10
+SGDR_T_MUL = 2
+
+
 def main(args):
     logging.getLogger("tensorflow").setLevel(args.verbosity)
+
+    inp_shape = (32, 32, 3)
+    num_classes = NUM_CLASSES[args.dataset]
+    baseline_augment, standardize = BASELINE_METHOD[args.dataset]
+    ds = DATASET[args.dataset](args.data_dir)
+
+    train_ds = ds['train_ds']
+    val_ds = ds['val_ds'] if 'val_ds' in ds else ds['test_ds']
+
+    # show dataset distribution only for reduced datasets
+    if args.dataset.startswith("reduced"):
+        train_distro, val_distro = [tf.math.bincount(
+            [label for image, label in curr_ds],
+            minlength=num_classes)
+            for curr_ds in (train_ds, val_ds)]
+
+        plt.figure(figsize=(15, 4))
+
+        plt.subplot(1, 2, 1)
+        plt.bar(tf.range(num_classes).numpy(), train_distro.numpy(), color='y')
+        plt.xlabel(args.dataset + " Classes")
+        plt.ylabel("Number of Samples")
+        plt.title("Training Distribution")
+
+        plt.subplot(1, 2, 2)
+        plt.bar(tf.range(num_classes).numpy(), val_distro.numpy(), color='g')
+        plt.xlabel(args.dataset + " Classes")
+        plt.ylabel("Number of Samples")
+        plt.title("Validation Distribution")
+
+        with tf.io.gfile.GFile(args.job_dir + "/dataset_distribution.pdf", "wb") as fig_file:
+            plt.savefig(fig_file, format="pdf")
+
+    wrn = WideResNet(inp_shape, depth=args.wrn_depth, k=args.wrn_k, num_classes=num_classes)
+    wrn.summary()
+
+    inp = keras.layers.Input(inp_shape, name='image_input')
+    x = baseline_augment(inp)
+
+    # mean normalization of CIFAR10, SVHN require that images be supplied
+    if args.dataset.endswith("cifar10") or args.dataset.endswith("svhn"):
+        images_only = train_ds.map(lambda image, label: image)
+        x = standardize(x, images_only)
+    # for ImageNet mean normalization is not required, rescaling is used instead
+    else:
+        x = standardize(x)
+
+    x = wrn(x)
+
+    model = keras.Model(inp, x, name='WRN')
+    model.summary()
 
 
 if __name__ == '__main__':
