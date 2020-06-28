@@ -64,7 +64,7 @@ val_ds = val_ds.cache().batch(batch_size)
 lr_schedule = keras.experimental.CosineDecayRestarts(init_learn_rate,
                                                      sgdr_t_0, sgdr_t_mul)
 opt = tfa.optimizers.SGDW(weight_decay, lr_schedule,
-                          momentum=0.9, nesterov=True)
+                          momentum=0.9)
 
 model.compile(opt, loss='sparse_categorical_crossentropy',
               metrics=['accuracy'])
