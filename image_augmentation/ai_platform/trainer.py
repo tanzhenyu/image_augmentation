@@ -15,8 +15,7 @@ from image_augmentation.datasets import cifar10, svhn, imagenet
 
 
 def get_args():
-    parser = argparse.ArgumentParser(
-        description='Train WRN on Google AI Platform')
+    parser = argparse.ArgumentParser(description='Train WRN on Google AI Platform')
 
     parser.add_argument(
         '--job-dir',
@@ -111,13 +110,17 @@ SGDR_T_MUL = 2
 
 
 def main(args):
+    # set level of verbosity
     logging.getLogger("tensorflow").setLevel(args.verbosity)
 
+    # image input shape is set 32 x 32
     inp_shape = (32, 32, 3)
+    # num classes and other pre-processing ops inferred based on given dataset name
     num_classes = NUM_CLASSES[args.dataset]
     baseline_augment, standardize = BASELINE_METHOD[args.dataset]
     ds = DATASET[args.dataset](args.data_dir)
 
+    # get train and validation/test datasets
     train_ds = ds['train_ds']
     val_ds = ds['val_ds'] if 'val_ds' in ds else ds['test_ds']
 
@@ -132,18 +135,20 @@ def main(args):
 
         plt.subplot(1, 2, 1)
         plt.bar(tf.range(num_classes).numpy(), train_distro.numpy(), color='y')
-        plt.xlabel(args.dataset + " Classes")
-        plt.ylabel("Number of Samples")
+        plt.xlabel(args.dataset + " classes")
+        plt.ylabel("number of samples")
         plt.title("Training Distribution")
 
         plt.subplot(1, 2, 2)
         plt.bar(tf.range(num_classes).numpy(), val_distro.numpy(), color='g')
-        plt.xlabel(args.dataset + " Classes")
-        plt.ylabel("Number of Samples")
+        plt.xlabel(args.dataset + " classes")
+        plt.ylabel("number of samples")
         plt.title("Validation Distribution")
 
-        with tf.io.gfile.GFile(args.job_dir + "/dataset_distribution.pdf", "wb") as fig_file:
+        fig_file_path = args.job_dir + "/dataset_distribution.pdf"
+        with tf.io.gfile.GFile(fig_file_path, "wb") as fig_file:
             plt.savefig(fig_file, format="pdf")
+        print("Wrote file to", fig_file_path)
 
     wrn = WideResNet(inp_shape, depth=args.wrn_depth, k=args.wrn_k, num_classes=num_classes)
     wrn.summary()
@@ -160,9 +165,47 @@ def main(args):
         x = standardize(x)
 
     x = wrn(x)
-
+    # model combines baseline augmentation, standardization and wide resnet layers
     model = keras.Model(inp, x, name='WRN')
     model.summary()
+
+    # use an SGDR optimizer with weight decay
+    lr_schedule = keras.experimental.CosineDecayRestarts(args.init_lr, SGDR_T0, SGDR_T_MUL)
+    opt = tfa.optimizers.SGDW(args.weight_decay, lr_schedule, momentum=0.9)
+
+    metrics = [keras.metrics.SparseCategoricalAccuracy()]
+    # use top-5 accuracy metric with ImageNet and reduced-ImageNet only
+    if args.dataset.endswith("imagenet"):
+        metrics.append(keras.metrics.SparseTopKCategoricalAccuracy(k=5))
+
+    model.compile(opt, loss='sparse_categorical_crossentropy', metrics=metrics)
+
+    # prepare tensorboard logging
+    tb_path = args.job_dir + '/tensorboard'
+    callbacks = [keras.callbacks.TensorBoard(tb_path)]
+    print("Using tensorboard directory as", tb_path)
+
+    # cache the dataset only if possible
+    if args.dataset not in ['svhn', 'imagenet']:
+        train_ds = train_ds.cache()
+        val_ds = val_ds.cache()
+
+    # shuffle and batch the dataset
+    train_ds = train_ds.shuffle(1000, reshuffle_each_iteration=True).batch(args.batch_size)
+    val_ds = val_ds.batch(args.batch_size)
+
+    # prefetch dataset for faster access in case of larger datasets only
+    if args.dataset in ['svhn', 'imagenet']:
+        train_ds = train_ds.prefetch(tf.data.experimental.AUTOTUNE)
+        val_ds = val_ds.prefetch(tf.data.experimental.AUTOTUNE)
+
+    # train the model
+    model.fit(train_ds, validation_data=val_ds, epochs=args.epochs, callbacks=callbacks)
+
+    # save keras model
+    save_path = args.job_dir + '/keras_model'
+    keras.models.save_model(model, save_path)
+    print("Model exported to", save_path)
 
 
 if __name__ == '__main__':
