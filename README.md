@@ -30,7 +30,7 @@ This project is currently a work in progress and includes the following componen
 
 ## Datasets
 
-The following are the list of datasets that we're currently looking at for augmentation policy search:
+The following are the list of datasets that we're currently looking at for augmentation policy search and image classification:
 1. [CIFAR-10](https://www.tensorflow.org/datasets/catalog/cifar10), Reduced CIFAR-10
 2. [CIFAR-100](https://www.tensorflow.org/datasets/catalog/cifar100)
 3. [SVHN](https://www.tensorflow.org/datasets/catalog/svhn_cropped), Reduced SVHN
