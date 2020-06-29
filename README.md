@@ -38,7 +38,7 @@ The following are the list of datasets that we're currently looking at for augme
 
 ## Installation
 
-The pre-requisites for this project include installation of `tf-nightly` package, which bundles nightly build (unstable pre-release) of the TensorFlow framework.
+The pre-requisites for this project include installation of TensorFlow v2.3.0 package, which is an pre-release of the TensorFlow framework.
 
 ```bash
 git clone https://github.com/tanzhenyu/image_augmentation
