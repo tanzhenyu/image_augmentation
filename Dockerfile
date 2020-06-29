@@ -1,5 +1,5 @@
 # use base image
-FROM tensorflow/tensorflow:nightly
+FROM tensorflow/tensorflow:nightly-gpu
 
 # set working directory
 WORKDIR /root
