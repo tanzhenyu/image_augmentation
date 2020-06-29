@@ -26,7 +26,7 @@ TRANSFORMS = {
 }
 
 
-def levels_to_args(translate_max_loc, rotate_max_deg, cutout_max_size):
+def levels_to_args(translate_max_loc=150, rotate_max_deg=30, cutout_max_size=60):
     shear_min_arg, shear_max_arg = -0.3, 0.3
     translate_min_arg, translate_max_arg = -translate_max_loc, translate_max_loc
     rotate_min_arg, rotate_max_arg = -rotate_max_deg, rotate_max_deg
@@ -56,16 +56,16 @@ def levels_to_args(translate_max_loc, rotate_max_deg, cutout_max_size):
 
         # if is_x use for translate x, else for translate y
         if is_x:
-            translate_to = [level, 0]
+            translate_to = [round(level), 0]
         else:
-            translate_to = [0, level]
+            translate_to = [0, round(level)]
         return translate_to, replace
     translate_x_args = lambda level: _translate_args(level, is_x=True)
     translate_y_args = lambda level: _translate_args(level, is_x=False)
 
     def rotate_args(level):
         angle = param(level, rotate_min_arg, rotate_max_arg)
-        return angle
+        return angle,
 
     def _no_args(_):
         return ()
@@ -74,27 +74,27 @@ def levels_to_args(translate_max_loc, rotate_max_deg, cutout_max_size):
     def solarize_args(level):
         threshold = param(level, solarize_min_arg, solarize_max_arg)
         threshold = round(threshold)
-        return round(threshold)
+        return threshold,
 
     def posterize_args(level):
         num_bits = param(level, posterize_min_arg, posterize_max_arg)
         num_bits = round(num_bits)
-        return num_bits
+        return num_bits,
 
     def _blend_args(level):
         magnitude = param(level, blend_min_arg, blend_max_arg)
-        return magnitude
-    contrast_args =  color_args =  brightness_args =  sharpness_args = _blend_args
+        return magnitude,
+    contrast_args = color_args = brightness_args = sharpness_args = _blend_args
 
     def cutout_args(level):
         size = param(level, cutout_min_arg, cutout_max_arg)
         size = round(size)
         size = size + 1 if size % 2 != 0 else size
-        return size
+        return size,
 
     def sample_pairing_args(level):
         weight = param(level, sample_pairing_min_arg, sample_pairing_max_arg)
-        return weight
+        return weight,
 
     return {
         "ShearX": shear_x_args,
