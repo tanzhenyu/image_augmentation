@@ -26,6 +26,13 @@ TRANSFORMS = {
 }
 
 
+def some_test_policy():
+    policy = [
+        [('Cutout', 0.7, 4), ('Invert', 0.3, 10)]
+    ]
+    return policy
+
+
 def levels_to_args(translate_max_loc=150, rotate_max_deg=30, cutout_max_size=60):
     shear_min_arg, shear_max_arg = -0.3, 0.3
     translate_min_arg, translate_max_arg = -translate_max_loc, translate_max_loc
@@ -114,3 +121,16 @@ def levels_to_args(translate_max_loc=150, rotate_max_deg=30, cutout_max_size=60)
         "Cutout": cutout_args,
         "SamplePairing": sample_pairing_args
     }
+
+
+def apply_subpolicy(image, subpolicy, args):
+    def apply_operation(image, op_name, level):
+        return TRANSFORMS[op_name](image, *args(level))
+
+    for op_name, prob, level in subpolicy:
+        random_draw = tf.random.uniform([])
+        should_apply_op = tf.floor(random_draw + tf.cast(prob, tf.float32))
+        should_apply_op = tf.cast(should_apply_op, tf.bool)
+
+        image = apply_operation(image, op_name, level) if should_apply_op else image
+    return image

@@ -52,8 +52,7 @@ python3 setup.py install
 Post installation, the tests can be run as follows:
 
 ```bash
-pip3 install pytest pipenv
 cd image_augmentation
-pipenv install --skip-lock --pre 
+pipenv install --dev --skip-lock --pre 
 pipenv shell pytest
 ```
