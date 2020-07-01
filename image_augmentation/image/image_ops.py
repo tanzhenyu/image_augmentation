@@ -156,9 +156,9 @@ def blend(image1, image2, factor):
 def color(image, magnitude):
     image = tf.convert_to_tensor(image)
     orig_dtype = image.dtype
-    grayed_image = tf.image.grayscale_to_rgb(tf.image.rgb_to_grayscale(image))
+    tiled_gray_image = tf.image.grayscale_to_rgb(tf.image.rgb_to_grayscale(image))
 
-    colored_image = blend(grayed_image, image, magnitude)
+    colored_image = blend(tiled_gray_image, image, magnitude)
     colored_image = tf.cast(colored_image, orig_dtype)
     return colored_image
 
