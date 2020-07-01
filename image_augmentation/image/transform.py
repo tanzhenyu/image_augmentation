@@ -124,8 +124,8 @@ def levels_to_args(translate_max_loc=150, rotate_max_deg=30, cutout_max_size=60)
 
 
 def apply_subpolicy(image, subpolicy, args):
-    def apply_operation(image, op_name, level):
-        return TRANSFORMS[op_name](image, *args(level))
+    def apply_operation(image_, op_name_, level_):
+        return TRANSFORMS[op_name_](image_, *args(level_))
 
     for op_name, prob, level in subpolicy:
         random_draw = tf.random.uniform([])
@@ -134,3 +134,31 @@ def apply_subpolicy(image, subpolicy, args):
 
         image = apply_operation(image, op_name, level) if should_apply_op else image
     return image
+
+
+def randomly_select_subpolicy(policy):
+    n_subpolicies = len(policy)
+    random_selection = tf.random.uniform([], 0, n_subpolicies, tf.int32)
+    return policy[random_selection]
+
+
+class PolicyAugmentation:
+    def __init__(self, policy, translate_max=150, rotate_max_degree=30, cutout_max_size=60):
+        self.translate_max = translate_max
+        self.rotate_max_degree = rotate_max_degree
+        self.cutout_max_size = cutout_max_size
+        self.args_level = levels_to_args(translate_max, rotate_max_degree, cutout_max_size)
+        self.policy = policy
+
+    def apply(self, images):
+        is_image_batch = tf.rank(images) == 4
+
+        def apply_on_image(image):
+            subpolicy = randomly_select_subpolicy(self.policy)
+            augmented_image = apply_subpolicy(image, subpolicy, self.args_level)
+            return augmented_image
+
+        augmented_images = tf.cond(is_image_batch,
+                                   lambda images_: tf.map_fn(apply_on_image, images_),
+                                   apply_on_image)
+        return augmented_images
