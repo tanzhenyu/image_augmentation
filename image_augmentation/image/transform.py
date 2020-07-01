@@ -34,6 +34,94 @@ def some_test_policy():
     return policy
 
 
+def autoaugment_policy(dataset='reduced_imagenet'):
+    policies = {
+        "reduced_cifar10": [
+            [('Invert', 0.1, 7), ('Contrast', 0.2, 6)],
+            [('Rotate', 0.7, 2), ('TranslateX', 0.3, 9)],
+            [('Sharpness', 0.8, 1), ('Sharpness', 0.9, 3)],
+            [('ShearY', 0.5, 8), ('TranslateY', 0.7, 9)],
+            [('AutoContrast', 0.5, 8), ('Equalize', 0.9, 2)],
+            [('ShearY', 0.2, 7), ('Posterize', 0.3, 7)],
+            [('Color', 0.4, 3), ('Brightness', 0.6, 7)],
+            [('Sharpness', 0.3, 9), ('Brightness', 0.7, 9)],
+            [('Equalize', 0.6, 5), ('Equalize', 0.5, 1)],
+            [('Contrast', 0.6, 7), ('Sharpness', 0.6, 5)],
+            [('Color', 0.7, 7), ('TranslateX', 0.5, 8)],
+            [('Equalize', 0.3, 7), ('AutoContrast', 0.4, 8)],
+            [('TranslateY', 0.4, 3), ('Sharpness', 0.2, 6)],
+            [('Brightness', 0.9, 6), ('Color', 0.2, 8)],
+            [('Solarize', 0.5, 2), ('Invert', 0.0, 3)],
+            [('Equalize', 0.2, 0), ('AutoContrast', 0.6, 0)],
+            [('Equalize', 0.2, 8), ('Equalize', 0.6, 4)],
+            [('Color', 0.9, 9), ('Equalize', 0.6, 6)],
+            [('AutoContrast', 0.8, 4), ('Solarize', 0.2, 8)],
+            [('Brightness', 0.1, 3), ('Color', 0.7, 0)],
+            [('Solarize', 0.4, 5), ('AutoContrast', 0.9, 3)],
+            [('TranslateY', 0.9, 9), ('TranslateY', 0.7, 9)],
+            [('AutoContrast', 0.9, 2), ('Solarize', 0.8, 3)],
+            [('Equalize', 0.8, 8), ('Invert', 0.1, 3)],
+            [('TranslateY', 0.7, 9), ('AutoContrast', 0.9, 1)]
+        ],
+        "reduced_svhn": [
+            [('ShearX', 0.9, 4), ('Invert', 0.2, 3)],
+            [('ShearY', 0.9, 8), ('Invert', 0.7, 5)],
+            [('Equalize', 0.6, 5), ('Solarize', 0.6, 6)],
+            [('Invert', 0.9, 3), ('Equalize', 0.6, 3)],
+            [('Equalize', 0.6, 1), ('Rotate', 0.9, 3)],
+            [('ShearX', 0.9, 4), ('AutoContrast', 0.8, 3)],
+            [('ShearY', 0.9, 8), ('Invert', 0.4, 5)],
+            [('ShearY', 0.9, 5), ('Solarize', 0.2, 6)],
+            [('Invert', 0.9, 6), ('AutoContrast', 0.8, 1)],
+            [('Equalize', 0.6, 3), ('Rotate', 0.9, 3)],
+            [('ShearX', 0.9, 4), ('Solarize', 0.3, 3)],
+            [('ShearY', 0.8, 8), ('Invert', 0.7, 4)],
+            [('Equalize', 0.9, 5), ('TranslateY', 0.6, 6)],
+            [('Invert', 0.9, 4), ('Equalize', 0.6, 7)],
+            [('Contrast', 0.3, 3), ('Rotate', 0.8, 4)],
+            [('Invert', 0.8, 5), ('TranslateY', 0.0, 2)],
+            [('ShearY', 0.7, 6), ('Solarize', 0.4, 8)],
+            [('Invert', 0.6, 4), ('Rotate', 0.8, 4)],
+            [('ShearY', 0.3, 7), ('TranslateX', 0.9, 3)],
+            [('ShearX', 0.1, 6), ('Invert', 0.6, 5)],
+            [('Solarize', 0.7, 2), ('TranslateY', 0.6, 7)],
+            [('ShearY', 0.8, 4), ('Invert', 0.8, 8)],
+            [('ShearX', 0.7, 9), ('TranslateY', 0.8, 3)],
+            [('ShearY', 0.8, 5), ('AutoContrast', 0.7, 3)],
+            [('ShearX', 0.7, 2), ('Invert', 0.1, 5)]
+        ],
+        "reduced_imagenet": [
+            [('Posterize', 0.4, 8), ('Rotate', 0.6, 9)],
+            [('Solarize', 0.6, 5), ('AutoContrast', 0.6, 5)],
+            [('Equalize', 0.8, 8), ('Equalize', 0.6, 3)],
+            [('Posterize', 0.6, 7), ('Posterize', 0.6, 6)],
+            [('Equalize', 0.4, 7), ('Solarize', 0.2, 4)],
+            [('Equalize', 0.4, 4), ('Rotate', 0.8, 8)],
+            [('Solarize', 0.6, 3), ('Equalize', 0.6, 7)],
+            [('Posterize', 0.8, 5), ('Equalize', 1.0, 2)],
+            [('Rotate', 0.2, 3), ('Solarize', 0.6, 8)],
+            [('Equalize', 0.6, 8), ('Posterize', 0.4, 6)],
+            [('Rotate', 0.8, 8), ('Color', 0.4, 0)],
+            [('Rotate', 0.4, 9), ('Equalize', 0.6, 2)],
+            [('Equalize', 0.0, 7), ('Equalize', 0.8, 8)],
+            [('Invert', 0.6, 4), ('Equalize', 1.0, 8)],
+            [('Color', 0.6, 4), ('Contrast', 1.0, 8)],
+            [('Rotate', 0.8, 8), ('Color', 1.0, 2)],
+            [('Color', 0.8, 8), ('Solarize', 0.8, 7)],
+            [('Sharpness', 0.4, 7), ('Invert', 0.6, 8)],
+            [('ShearX', 0.6, 5), ('Equalize', 1.0, 9)],
+            [('Color', 0.4, 0), ('Equalize', 0.6, 3)],
+            [('Equalize', 0.4, 7), ('Solarize', 0.2, 4)],
+            [('Solarize', 0.6, 5), ('AutoContrast', 0.6, 5)],
+            [('Invert', 0.6, 4), ('Equalize', 1.0, 8)],
+            [('Color', 0.6, 4), ('Contrast', 1.0, 8)],
+            [('Equalize', 0.8, 8), ('Equalize', 0.6, 3)]
+        ]
+    }
+    assert dataset in policies.keys()
+    return policies[dataset]
+
+
 def levels_to_args(translate_max_loc=150, rotate_max_deg=30, cutout_max_size=60):
     shear_min_arg, shear_max_arg = -0.3, 0.3
     translate_min_arg, translate_max_arg = -translate_max_loc, translate_max_loc

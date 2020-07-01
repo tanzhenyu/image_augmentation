@@ -177,7 +177,7 @@ def sharpness(image, magnitude):
 
     # add extra dimension to image before conv
     blurred_image = tf.nn.depthwise_conv2d(image[None, ...], blur_kernel,
-                                         strides, padding="VALID")
+                                           strides, padding="VALID")
     blurred_image = tf.clip_by_value(blurred_image, 0., 255.)
     # remove extra dimension
     blurred_image = blurred_image[0]
