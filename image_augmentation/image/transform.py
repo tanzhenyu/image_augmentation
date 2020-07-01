@@ -28,7 +28,8 @@ TRANSFORMS = {
 
 def some_test_policy():
     policy = [
-        [('Cutout', 0.7, 4), ('Invert', 0.3, 10)]
+        [('Cutout', 0.7, 4), ('Invert', 0.3, 10)],
+        [('Posterize', 0.6, 10), ('Brightness', 0.3, 2)]
     ]
     return policy
 
@@ -125,7 +126,7 @@ def levels_to_args(translate_max_loc=150, rotate_max_deg=30, cutout_max_size=60)
 
 def apply_subpolicy(image, subpolicy, args):
     def apply_operation(image_, op_name_, level_):
-        return TRANSFORMS[op_name_](image_, *args(level_))
+        return TRANSFORMS[op_name_](image_, *args[op_name_](level_))
 
     for op_name, prob, level in subpolicy:
         random_draw = tf.random.uniform([])
@@ -151,6 +152,7 @@ class PolicyAugmentation:
         self.policy = policy
 
     def apply(self, images):
+        images = tf.convert_to_tensor(images)
         is_image_batch = tf.rank(images) == 4
 
         def apply_on_image(image):
@@ -159,6 +161,9 @@ class PolicyAugmentation:
             return augmented_image
 
         augmented_images = tf.cond(is_image_batch,
-                                   lambda images_: tf.map_fn(apply_on_image, images_),
-                                   apply_on_image)
+                                   lambda: tf.map_fn(apply_on_image, images),
+                                   lambda: apply_on_image(images))
         return augmented_images
+
+    def __call__(self, images):
+        return self.apply(images)
