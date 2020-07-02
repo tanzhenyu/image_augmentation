@@ -1,8 +1,8 @@
 import tensorflow as tf
 import tensorflow_addons as tfa
 
-from image_augmentation.image import auto_contrast, invert, equalize, solarize, posterize, contrast
-from image_augmentation.image import color, brightness, sharpness, cutout, sample_pairing
+from image_augmentation.image import auto_contrast, invert, equalize, solarize, posterize
+from image_augmentation.image import contrast, color, brightness, sharpness, cutout
 
 MAX_LEVEL = 10
 
@@ -21,8 +21,7 @@ TRANSFORMS = {
     "Color": color,
     "Brightness": brightness,
     "Sharpness": sharpness,
-    "Cutout": cutout,
-    "SamplePairing": sample_pairing
+    "Cutout": cutout
 }
 
 
@@ -128,12 +127,10 @@ def levels_to_args(translate_max_loc=150, rotate_max_deg=30, cutout_max_size=60)
     rotate_min_arg, rotate_max_arg = -rotate_max_deg, rotate_max_deg
     solarize_min_arg, solarize_max_arg = 0, 256
     posterize_min_arg, posterize_max_arg = 4, 8
+    cutout_min_arg, cutout_max_arg = 0, cutout_max_size
 
     # contrast, color, brightness, sharpness uses the same range
     blend_min_arg, blend_max_arg = 0.1, 1.9
-
-    cutout_min_arg, cutout_max_arg = 0, cutout_max_size
-    sample_pairing_min_arg, sample_pairing_max_arg = 0, 0.4
 
     gray_color = (128, 128, 128)
 
@@ -188,10 +185,6 @@ def levels_to_args(translate_max_loc=150, rotate_max_deg=30, cutout_max_size=60)
         size = size + 1 if size % 2 != 0 else size
         return size,
 
-    def sample_pairing_args(level):
-        weight = param(level, sample_pairing_min_arg, sample_pairing_max_arg)
-        return weight,
-
     return {
         "ShearX": shear_x_args,
         "ShearY": shear_y_args,
@@ -207,8 +200,7 @@ def levels_to_args(translate_max_loc=150, rotate_max_deg=30, cutout_max_size=60)
         "Color": color_args,
         "Brightness": brightness_args,
         "Sharpness": sharpness_args,
-        "Cutout": cutout_args,
-        "SamplePairing": sample_pairing_args
+        "Cutout": cutout_args
     }
 
 
