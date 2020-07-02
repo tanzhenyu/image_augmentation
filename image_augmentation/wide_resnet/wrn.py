@@ -13,40 +13,33 @@ _batch_norm = partial(BatchNormalization, axis=CHANNEL_AXIS)
 _relu = partial(Activation, 'relu')
 
 
-def _conv_block(input, name='conv1'):
-    x = input
-
-    x = Conv2D(16, (3, 3), padding='same', name=name + '/conv_3x3')(x)
-    x = _batch_norm(name=name + '/conv_bn')(x)
-    x = _relu(name=name + '/conv_out')(x)
-
-    return x
-
-
 def _residual_block(input, num_filters=16, k=1,
                     stride=1, dropout=0.0, name='conv2'):
 
     num_filters = num_filters * k
-    init = input
+    init = branch = input
 
     if init.shape[CHANNEL_AXIS] != num_filters:
-        init = Conv2D(num_filters, (1, 1), strides=stride, padding='same',
-                      name=name + '/conv_identity_1x1')(input)
+        init = _batch_norm(name=name + '/bn1')(init)
+        init = _relu(name=name + '/relu1')(init)
+        branch = Conv2D(num_filters, (1, 1), strides=stride, padding='same',
+                        name=name + '/conv_identity_1x1')(init)
+    else:
+        init = _batch_norm(name=name + '/bn1')(init)
+        init = _relu(name=name + '/relu1')(init)
 
     x = Conv2D(num_filters, (3, 3), strides=stride, padding='same',
-               name=name + '/conv1_3x3')(input)
-    x = _batch_norm(name=name + '/conv1_bn')(x)
-    x = _relu(name=name + '/conv1_out')(x)
+               name=name + '/conv1_3x3')(init)
 
     if dropout > 0.0:
         x = Dropout(dropout, name=name + '/dropout')(x)
 
+    x = _batch_norm(name=name + '/bn2')(x)
+    x = _relu(name=name + '/relu2')(x)
     x = Conv2D(num_filters, (3, 3), strides=1, padding='same',
                name=name + '/conv2_3x3')(x)
 
-    x = Add(name=name + '/add')([init, x])
-    x = _batch_norm(name=name + '/bn')(x)
-    x = _relu(name=name + '/out')(x)
+    x = Add(name=name + '/add')([branch, x])
 
     return x
 
@@ -64,7 +57,7 @@ def WideResNet(input_shape, depth=28, k=10, dropout=0.0,
     inp = Input(input_shape, name='input')
 
     # conv1
-    x = _conv_block(inp, name='conv1')
+    x = Conv2D(16, (3, 3), padding='same', name='conv1/conv_3x3')(inp)
 
     # conv2: n blocks
     for i in range(n):
@@ -85,6 +78,9 @@ def WideResNet(input_shape, depth=28, k=10, dropout=0.0,
         x = _residual_block(x, num_filters=filters[2], k=k,
                             stride=stride, dropout=dropout,
                             name='conv4' + '/block' + str(i + 1))
+
+    x = _batch_norm(name='bn')(x)
+    x = _relu(name='relu')(x)
 
     x = GlobalAveragePooling2D(name='avg_pool')(x)
     x = Dense(num_classes, activation='softmax', name='preds')(x)
