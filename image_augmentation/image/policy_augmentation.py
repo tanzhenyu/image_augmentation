@@ -122,9 +122,12 @@ def autoaugment_policy(dataset='reduced_imagenet'):
 
 
 def levels_to_args(translate_max_loc=150, rotate_max_deg=30, cutout_max_size=60):
-    shear_min_arg, shear_max_arg = -0.3, 0.3
-    translate_min_arg, translate_max_arg = -translate_max_loc, translate_max_loc
-    rotate_min_arg, rotate_max_arg = -rotate_max_deg, rotate_max_deg
+    # shear will have range [-0.3, 0.3] by applying random negation
+    shear_min_arg, shear_max_arg = 0.0, 0.3
+    # translate will have range [-0.3, 0.3] by applying random negation
+    translate_min_arg, translate_max_arg = 0.0, translate_max_loc
+    # rotate will have range [-0.3, 0.3] by applying random negation
+    rotate_min_arg, rotate_max_arg = 0.0, rotate_max_deg
     solarize_min_arg, solarize_max_arg = 0, 256
     posterize_min_arg, posterize_max_arg = 4, 8
     cutout_min_arg, cutout_max_arg = 0, cutout_max_size
@@ -137,14 +140,22 @@ def levels_to_args(translate_max_loc=150, rotate_max_deg=30, cutout_max_size=60)
     def param(level, min_arg, max_arg):
         return (level * (max_arg - min_arg) / MAX_LEVEL) + min_arg
 
+    def randomly_negate(arg):
+        random_draw = tf.floor(tf.random.uniform([]) + 0.5)
+        should_negate = tf.cast(random_draw, tf.bool)
+        arg = tf.cond(should_negate, lambda: -arg, lambda: arg)
+        return arg
+
     def _shear_args(level):
         level = param(level, shear_min_arg, shear_max_arg)
+        level = randomly_negate(level)
         replace = gray_color
         return level, replace
     shear_x_args = shear_y_args = _shear_args
 
     def _translate_args(level, is_x):
         level = param(level, translate_min_arg, translate_max_arg)
+        level = randomly_negate(level)
         replace = gray_color
 
         # if is_x use for translate x, else for translate y
@@ -158,6 +169,7 @@ def levels_to_args(translate_max_loc=150, rotate_max_deg=30, cutout_max_size=60)
 
     def rotate_args(level):
         angle = param(level, rotate_min_arg, rotate_max_arg)
+        angle = randomly_negate(angle)
         return angle,
 
     def _no_args(_):
