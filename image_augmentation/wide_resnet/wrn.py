@@ -14,19 +14,16 @@ _relu = partial(Activation, 'relu')
 
 
 def _residual_block(input, num_filters=16, k=1,
-                    stride=1, dropout=0.0, name='conv2'):
+                    stride=1, dropout=0.0, name='res_block'):
 
     num_filters = num_filters * k
     init = branch = input
 
-    if init.shape[CHANNEL_AXIS] != num_filters:
-        init = _batch_norm(name=name + '/bn1')(init)
-        init = _relu(name=name + '/relu1')(init)
+    init = _batch_norm(name=name + '/bn1')(init)
+    init = _relu(name=name + '/relu1')(init)
+    if init.shape[CHANNEL_AXIS] != num_filters or name.endswith("block1"):
         branch = Conv2D(num_filters, (1, 1), strides=stride, padding='same',
                         name=name + '/conv_identity_1x1')(init)
-    else:
-        init = _batch_norm(name=name + '/bn1')(init)
-        init = _relu(name=name + '/relu1')(init)
 
     x = Conv2D(num_filters, (3, 3), strides=stride, padding='same',
                name=name + '/conv1_3x3')(init)
@@ -49,7 +46,7 @@ def WideResNet(input_shape, depth=28, k=10, dropout=0.0,
     if name is None:
         name = 'WideResNet' + '-' + str(depth) + '-' + str(k)
 
-    assert (depth - 4) % 6 == 0, "depth must be 6n+4"
+    assert (depth - 4) % 6 == 0, "depth must be 6n + 4"
     n = (depth - 4) // 6
 
     filters = [(16 * (2 ** i)) for i in range(3)]

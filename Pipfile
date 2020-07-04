@@ -15,7 +15,7 @@ numpy = "*"
 matplotlib = "*"
 pylint = "*"
 tensorflow-datasets = "*"
-tensorflow-addons = "*"
+tfa-nightly = "==0.11.0.dev20200630231055"
 
 [requires]
 python_version = "3.7"
