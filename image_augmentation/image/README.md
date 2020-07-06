@@ -99,24 +99,28 @@ import tensorflow as tf
 import tensorflow_datasets as tfds
 from image_augmentation.image import PolicyAugmentation, autoaugment_policy
 
+# load CIFAR-10 as TFDS pipeline
 ds = tfds.load('cifar10', split='train', as_supervised=True)
 
+# use AutoAugment policy for CIFAR-10
 cifar10_policy = autoaugment_policy("reduced_cifar10")
-augmenter = PolicyAugmentation(cifar10_policy)
+augmenter = PolicyAugmentation(cifar10_policy, translate_max=16, cutout_max_size=16) # set hyper params for 32x32 images
 
+# take a subset of 20 images only
 subset_size = 20
 ds = ds.take(subset_size)
 
 original_images = [image for image in ds]
-show_images(original_images)
+show_images(original_images) # show original images
 
 def map_fn(image, label):
     augmented_image = tf.py_function(augmenter, [image], image.dtype)
     return augmented_image, label
+# apply augmentation on the images
 aug_ds = ds.map(map_fn, tf.data.experimental.AUTOTUNE)
 
 augmented_images = [image for image, label in aug_ds]
-show_images(augmented_images)
+show_images(augmented_images) # show augmented images
 ```
 
 ![Original Images](../../images/cifar10_images.png)
