@@ -152,5 +152,6 @@ augmented_images = augmenter(images)
 show_images(augmented_images) # show augmented images
 ```
 
-![Original Images](../../images/svhn_augmented_images.png)
 ![Augmented Images](../../images/svhn_images.png)
+![Original Images](../../images/svhn_augmented_images.png)
+
