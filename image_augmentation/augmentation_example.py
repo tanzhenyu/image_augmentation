@@ -43,5 +43,5 @@ show_images(images)
 plt.suptitle("Original Images")
 
 show_images(augmented_images)
-plt.suptitle("Image Data Augmentation using AutoAugment (reduced ImageNet) Policy ")
+plt.suptitle("Image Data Augmentation using AutoAugment (reduced ImageNet) Policy")
 plt.show()

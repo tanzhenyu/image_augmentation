@@ -37,7 +37,7 @@ The AutoAugment paper provides details for policies found on 3 datasets:
 2. Reduced SVHN [[policy](./policy_augmentation.py#L65-L91)]
 3. Reduced CIFAR-10 [[[policy](./policy_augmentation.py#L38-L64)]
 
-Example usage:
+## Usage
 
 **Example 1**: Augmenting a list of images read from disk
 
@@ -45,6 +45,7 @@ Example usage:
 import tensorflow as tf
 from image_augmentation.image import PolicyAugmentation, autoaugment_policy
 
+# gather list of image paths
 paths = tf.convert_to_tensor([
     '/path/to/datasets/flower_photos/dandelion/4278757393_bca8415ed4_n.jpg',
     '/path/to/datasets/flower_photos/dandelion/4571681134_b605a61547_n.jpg',
@@ -69,6 +70,7 @@ paths = tf.convert_to_tensor([
 ])
 image_size = 331
 
+# read a single image
 @tf.function
 def read_image(path):
     image = tf.io.read_file(path)
@@ -77,14 +79,42 @@ def read_image(path):
     return image 
 images = tf.map_fn(read_image, paths, dtype=tf.uint8)
 
-show_images(images) # original images
+show_images(images) # show original images
 
-policy = autoaugment_policy()
-augmenter = PolicyAugmentation(policy)
+# AutoAugment all the images
+imagenet_policy = autoaugment_policy()
+augmenter = PolicyAugmentation(imagenet_policy)
 augmented_images = augmenter(images)
 
-show_images(augmented_images) # augmented images
+show_images(augmented_images) # show augmented images
 ```
 
 ![Original Images](../../tf-flowers_images.png)
 ![Augmented Images](../../tf-flowers_augmented_images.png)
+
+**Example 2**: Applying AutoAugment on a TFDS pipeline
+
+```python
+import tensorflow as tf
+import tensorflow_datasets as tfds
+from image_augmentation.image import PolicyAugmentation, autoaugment_policy
+
+ds = tfds.load('cifar10', split='train', as_supervised=True)
+
+cifar10_policy = autoaugment_policy("reduced_cifar10")
+augmenter = PolicyAugmentation(cifar10_policy)
+
+subset_size = 20
+ds = ds.take(subset_size)
+
+original_images = [image for image in ds]
+show_images(original_images)
+
+def map_fn(image, label):
+    augmented_image = tf.py_function(augmenter, [image], image.dtype)
+    return augmented_image, label
+aug_ds = ds.map(map_fn, tf.data.experimental.AUTOTUNE)
+
+augmented_images = [image for image, label in aug_ds]
+show_images(augmented_images)
+```
