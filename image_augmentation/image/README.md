@@ -34,8 +34,8 @@ The corresponding image op(s) from the selected subpolicy are then applied on th
 
 The AutoAugment paper provides details for policies found on 3 datasets:
 1. Reduced ImageNet [[policy](./policy_augmentation.py#L92-L118)]
-2. Reduced SVHN [[policy](./policy_augmentation.py#L65-L91)]
-3. Reduced CIFAR-10 [[[policy](./policy_augmentation.py#L38-L64)]
+2. Reduced SVHN [[policy](./policy_augmentation.py#L65-L91)]]
+3. Reduced CIFAR-10 [[policy](./policy_augmentation.py#L38-L64)]
 
 ## Usage
 
@@ -125,3 +125,32 @@ show_images(augmented_images) # show augmented images
 
 ![Original Images](../../images/cifar10_augmented_images.png)
 ![Augmented Images](../../images/cifar10_images.png)
+
+**Example 3**: Applying AutoAugment on a batch of images
+
+```python
+import tensorflow_datasets as tfds
+from image_augmentation.image import PolicyAugmentation, autoaugment_policy
+
+# load SVHN as TFDS pipeline
+ds = tfds.load('svhn_cropped', split='train', as_supervised=True)
+
+# use AutoAugment policy for SVHN
+cifar10_policy = autoaugment_policy("reduced_svhn")
+augmenter = PolicyAugmentation(cifar10_policy, translate_max=16, cutout_max_size=16) # set hyper params for 32x32 images
+
+# shuffle and apply batching on the pipeline
+batch_size = 32
+ds = ds.shuffle(1000).batch(batch_size)
+
+for images, labels in ds.take(1):
+    pass
+show_images(images) # show original images
+
+# apply AutoAugment
+augmented_images = augmenter(images)
+show_images(augmented_images) # show augmented images
+```
+
+![Original Images](../../images/svhn_augmented_images.png)
+![Augmented Images](../../images/svhn_images.png)
