@@ -118,3 +118,6 @@ aug_ds = ds.map(map_fn, tf.data.experimental.AUTOTUNE)
 augmented_images = [image for image, label in aug_ds]
 show_images(augmented_images)
 ```
+
+![Original Images](../../cifar10_images.png)
+![Augmented Images](../../cifar10_augmented_images.png)
