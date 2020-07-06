@@ -36,11 +36,12 @@ def show_images(images):
         plt.subplot(subset_size // 4, 4, idx + 1)
         plt.imshow(image.numpy())
         plt.axis("off")
+    plt.tight_layout(0.5, rect=(0, 0, 1, 0.95))
 
 
 show_images(images)
 plt.suptitle("Original Images")
 
 show_images(augmented_images)
-plt.suptitle("Image Data Augmentation using AutoAugment Policies found on reduced ImageNet")
+plt.suptitle("Image Data Augmentation using AutoAugment (reduced ImageNet) Policy ")
 plt.show()

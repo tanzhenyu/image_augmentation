@@ -26,6 +26,15 @@ As of now, we're reusing the following image op(s) from the TensorFlow Addons pa
 | **Translate** | Translate the image in the horizontal / vertical axis with rate `magnitude`. | `tfa.image.translate_xy` |
 | **Rotate** | Rotate the image by `magnitude` degrees. | `tfa.image.rotate` |
 
-**Image Pipeline**
+**Image Data Augmentation**
 
-Coming soon.
+AutoAugment uses an augmentation policy consisting of multiple sub-policies.
+Each of the subpolicy has two image operations associated with a probability and magnitude of effect. (some image operations like `AutoContrast`, `Invert`, `Equalize` do not have any effect of `magnitude` parameter)
+For any particular image of the training set, we apply a subpolicy chosen randomly from the AutoAugment policy.
+The corresponding image op(s) from the selected subpolicy are then applied on the image basis their individual probabilities.
+
+The AutoAugment paper provides details for policies found on 3 datasets:
+1. Reduced ImageNet [[policy](./policy_augmentation.py#L92-L118)]
+2. Reduced SVHN [[policy](./policy_augmentation.py#L65-L91)]
+3. Reduced CIFAR-10 [[[policy](./policy_augmentation.py#L38-L64)]
+
