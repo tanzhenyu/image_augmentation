@@ -10,7 +10,7 @@ In this repository, we provide implementation for the following research papers 
 This project is currently a work in progress and includes the following components as of now.
 - [WideResNet(s)](./image_augmentation/wide_resnet)
     - Wide Residual Networks (https://arxiv.org/abs/1605.07146)
-- [Image Ops(s)](./image_augmentation/image)
+- [Image Ops(s)](./image_augmentation/image#image-ops)
     - AutoContrast
     - Invert 
     - Equalize 
@@ -23,7 +23,7 @@ This project is currently a work in progress and includes the following componen
     - Cutout (https://arxiv.org/abs/1708.04552)
     - Sample Pairing (https://arxiv.org/abs/1801.02929)
 - [Pre-processing](./image_augmentation/preprocessing) using Baseline Augmentation and Standardization or Rescaling
-- [Image Data Augmentation](./image_augmentation/image)
+- [Image Data Augmentation](./image_augmentation/image#image-data-augmentation)
     - Data augmentation using AutoAugment policies
     - [Policy Augmentation](./image_augmentation/image/policy_augmentation.py#L238-L261)
 
