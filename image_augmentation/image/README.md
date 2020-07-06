@@ -1,6 +1,4 @@
-# Image Pipelining
-
-**Image Op(s)**
+# Image Op(s)
 
 The following is the list of image processing operations and their current implementation status.
 
@@ -19,6 +17,7 @@ The following is the list of image processing operations and their current imple
 | **Sample Pairing** | Linearly add the image with another image with weight `magnitude`. (https://arxiv.org/abs/1801.02929) | ✅ Implemented | Display two random images paired together. <br/> TODO: Write a test that is good enough to evaluate this. | Passing |
 
 As of now, we're reusing the following image op(s) from the TensorFlow Addons package.
+These op(s) internally make use of `tfa.image.transform` which is implemented using `tf.raw_ops.ImageProjectiveTransformV2`.
 
 | Image Op Name | Op Description | Equivalent Function |
 | --- | --- | --- |
@@ -26,7 +25,7 @@ As of now, we're reusing the following image op(s) from the TensorFlow Addons pa
 | **Translate** | Translate the image in the horizontal / vertical axis with rate `magnitude`. | `tfa.image.translate_xy` |
 | **Rotate** | Rotate the image by `magnitude` degrees. | `tfa.image.rotate` |
 
-**Image Data Augmentation**
+# Image Data Augmentation
 
 AutoAugment uses an augmentation policy consisting of multiple sub-policies.
 Each of the subpolicy has two image operations associated with a probability and magnitude of effect. (some image operations like `AutoContrast`, `Invert`, `Equalize` do not have any effect of `magnitude` parameter)
