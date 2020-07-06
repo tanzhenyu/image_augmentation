@@ -89,8 +89,8 @@ augmented_images = augmenter(images)
 show_images(augmented_images) # show augmented images
 ```
 
-![Original Images](../../tf-flowers_images.png)
-![Augmented Images](../../tf-flowers_augmented_images.png)
+![Original Images](../../images/tf-flowers_images.png)
+![Augmented Images](../../images/tf-flowers_augmented_images.png)
 
 **Example 2**: Applying AutoAugment on a TFDS pipeline
 
@@ -119,5 +119,5 @@ augmented_images = [image for image, label in aug_ds]
 show_images(augmented_images)
 ```
 
-![Original Images](../../cifar10_images.png)
-![Augmented Images](../../cifar10_augmented_images.png)
+![Original Images](../../images/cifar10_images.png)
+![Augmented Images](../../images/cifar10_augmented_images.png)
