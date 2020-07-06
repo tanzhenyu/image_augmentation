@@ -87,6 +87,4 @@ show_images(augmented_images) # augmented images
 ```
 
 ![Original Images](../../tf-flowers_images.png)
-![Augmented Images](../../tf-flowers_images.png)
-
-
+![Augmented Images](../../tf-flowers_augmented_images.png)
