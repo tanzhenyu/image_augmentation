@@ -4,7 +4,7 @@ import random
 
 from image_augmentation.image import PolicyAugmentation, autoaugment_policy
 
-image_paths = tf.io.gfile.glob("/Volumes/Card/Datasets/flower_photos/tulips/*.jpg")
+image_paths = tf.io.gfile.glob("/Volumes/Card/Datasets/flower_photos/*/*.jpg")
 random.shuffle(image_paths)
 
 subset_size = 20

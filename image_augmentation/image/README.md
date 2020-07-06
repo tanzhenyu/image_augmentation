@@ -37,3 +37,56 @@ The AutoAugment paper provides details for policies found on 3 datasets:
 2. Reduced SVHN [[policy](./policy_augmentation.py#L65-L91)]
 3. Reduced CIFAR-10 [[[policy](./policy_augmentation.py#L38-L64)]
 
+Example usage:
+
+**Example 1**: Augmenting a list of images read from disk
+
+```python
+import tensorflow as tf
+from image_augmentation.image import PolicyAugmentation, autoaugment_policy
+
+paths = tf.convert_to_tensor([
+    '/path/to/datasets/flower_photos/dandelion/4278757393_bca8415ed4_n.jpg',
+    '/path/to/datasets/flower_photos/dandelion/4571681134_b605a61547_n.jpg',
+    '/path/to/datasets/flower_photos/roses/6069602140_866eecf7c2_m.jpg',
+    '/path/to/datasets/flower_photos/dandelion/15219268336_f2460fca88_m.jpg',
+    '/path/to/datasets/flower_photos/daisy/14354051035_1037b30421_n.jpg',
+    '/path/to/datasets/flower_photos/roses/3705716290_cb7d803130_n.jpg',
+    '/path/to/datasets/flower_photos/sunflowers/175638423_058c07afb9.jpg',
+    '/path/to/datasets/flower_photos/dandelion/4944731313_023a0508fd_n.jpg',
+    '/path/to/datasets/flower_photos/roses/8642943283_47e44d049d_m.jpg',
+    '/path/to/datasets/flower_photos/daisy/18442919723_d1251d3e14_n.jpg',
+    '/path/to/datasets/flower_photos/roses/15011625580_7974c44bce.jpg',
+    '/path/to/datasets/flower_photos/roses/16051111039_0f0626a241_n.jpg',
+    '/path/to/datasets/flower_photos/sunflowers/15118397087_bfb7ea70d5_n.jpg',
+    '/path/to/datasets/flower_photos/roses/1667199972_7ba7d999c1_m.jpg',
+    '/path/to/datasets/flower_photos/tulips/7266196114_c2a736a15a_m.jpg',
+    '/path/to/datasets/flower_photos/roses/23891005905_17ce9e6936.jpg',
+    '/path/to/datasets/flower_photos/sunflowers/5979669004_d9736206c9_n.jpg',
+    '/path/to/datasets/flower_photos/roses/16552686350_db8db55cd2.jpg',
+    '/path/to/datasets/flower_photos/roses/269037241_07fceff56a_m.jpg',
+    '/path/to/datasets/flower_photos/tulips/112951022_4892b1348b_n.jpg'
+])
+image_size = 331
+
+@tf.function
+def read_image(path):
+    image = tf.io.read_file(path)
+    image = tf.image.decode_jpeg(image)
+    image = tf.image.resize_with_crop_or_pad(image, image_size, image_size)
+    return image 
+images = tf.map_fn(read_image, paths, dtype=tf.uint8)
+
+show_images(images) # original images
+
+policy = autoaugment_policy()
+augmenter = PolicyAugmentation(policy)
+augmented_images = augmenter(images)
+
+show_images(augmented_images) # augmented images
+```
+
+![Original Images](../../tf-flowers_images.png)
+![Augmented Images](../../tf-flowers_images.png)
+
+
