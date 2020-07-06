@@ -123,5 +123,5 @@ augmented_images = [image for image, label in aug_ds]
 show_images(augmented_images) # show augmented images
 ```
 
-![Original Images](../../images/cifar10_images.png)
-![Augmented Images](../../images/cifar10_augmented_images.png)
+![Original Images](../../images/cifar10_augmented_images.png)
+![Augmented Images](../../images/cifar10_images.png)
