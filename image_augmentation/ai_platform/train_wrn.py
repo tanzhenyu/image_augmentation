@@ -215,7 +215,7 @@ def main(args):
             # TODO: devise a fix so as to remove tf.py_function call
             augmented_images = tf.py_function(augmenter, [images], images.dtype)
             return augmented_images, labels
-        train_ds = train_ds.map(augment_map_fn, tf.data.experimental.AUTOTUNE)
+        train_ds = train_ds.map(augment_map_fn) # refrain from using AUTOTUNE here, breaks the pipeline
 
     # prefetch dataset for faster access in case of larger datasets only
     if args.dataset in ['svhn', 'imagenet']:
