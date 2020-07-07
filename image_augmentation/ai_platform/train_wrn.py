@@ -12,6 +12,7 @@ from image_augmentation.preprocessing import imagenet_standardization, imagenet_
 from image_augmentation.preprocessing import cifar_standardization, cifar_baseline_augmentation
 from image_augmentation.datasets import reduced_cifar10, reduced_svhn, reduced_imagenet
 from image_augmentation.datasets import cifar10, svhn, imagenet
+from image_augmentation.image import PolicyAugmentation, autoaugment_policy
 
 
 def get_args():
@@ -42,6 +43,13 @@ def get_args():
         default=2,
         type=int,
         help='widening factor of Wide ResNet, default=2')
+    parser.add_argument(
+        '--auto-augment',
+        default=False,
+        const=True,
+        action='store_const',
+        help="apply AutoAugment policy for data augmentation on training "
+    )
     parser.add_argument(
         '--dataset',
         default='cifar10',
@@ -193,6 +201,21 @@ def main(args):
     # shuffle and batch the dataset
     train_ds = train_ds.shuffle(1000, reshuffle_each_iteration=True).batch(args.batch_size)
     val_ds = val_ds.batch(args.batch_size)
+
+    # apply AutoAugment (data augmentation) on training pipeline
+    if args.auto_augment:
+        # ensure AutoAugment policy dataset name always starts with "reduced_"
+        policy_ds_name = "reduced_" + args.dataset if not args.dataset.startswith("reduced_") else args.dataset
+        policy = autoaugment_policy(policy_ds_name)
+
+        # set hyper parameters to size 16 as input size is 32 x 32
+        augmenter = PolicyAugmentation(policy, translate_max=16, cutout_max_size=16)
+
+        def augment_map_fn(images, labels):
+            # TODO: devise a fix so as to remove tf.py_function call
+            augmented_images = tf.py_function(augmenter, [images], images.dtype)
+            return augmented_images, labels
+        train_ds = train_ds.map(augment_map_fn, tf.data.experimental.AUTOTUNE)
 
     # prefetch dataset for faster access in case of larger datasets only
     if args.dataset in ['svhn', 'imagenet']:
