@@ -158,7 +158,7 @@ show_images(augmented_images) # show augmented images
 ![Original Images](../../images/svhn_images.png)
 ![Augmented Images](../../images/svhn_augmented_images.png)
 
-**Example 3**: Using `PolicyAugmentation` with a custom data augmentation policy
+**Example 4**: Using `PolicyAugmentation` with a custom data augmentation policy
 
 ```python
 import tensorflow as tf
