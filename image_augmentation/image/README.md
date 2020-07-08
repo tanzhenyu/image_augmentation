@@ -33,9 +33,9 @@ For any particular image of the training set, we apply a subpolicy chosen random
 The corresponding image op(s) from the selected subpolicy are then applied on the image basis their individual probabilities.
 
 The AutoAugment paper provides details for policies found on 3 datasets:
-1. Reduced ImageNet [[policy](./policy_augmentation.py#L92-L118)]
-2. Reduced SVHN [[policy](./policy_augmentation.py#L65-L91)]]
-3. Reduced CIFAR-10 [[policy](./policy_augmentation.py#L38-L64)]
+1. Reduced ImageNet [ [policy](./policy_augmentation.py#L92-L118) ]
+2. Reduced SVHN [ [policy](./policy_augmentation.py#L65-L91) ]
+3. Reduced CIFAR-10 [ [policy](./policy_augmentation.py#L38-L64) ]
 
 ## Usage
 
@@ -194,3 +194,6 @@ show_images(images) # show original images
 augmented_images = augmenter(images)
 show_images(augmented_images) # show augmented images
 ```
+
+![Original Images](../../images/tf-flowers_images1.png)
+![Augmented Images](../../images/tf-flowers_augmented_images1.png)
