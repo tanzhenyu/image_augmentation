@@ -137,7 +137,10 @@ ds = tfds.load('svhn_cropped', split='train', as_supervised=True)
 
 # use AutoAugment policy for SVHN
 cifar10_policy = autoaugment_policy("reduced_svhn")
-augmenter = PolicyAugmentation(cifar10_policy, translate_max=16, cutout_max_size=16) # set hyper params for 32x32 images
+# PolicyAugmentation class uses a few hyperparameters for translate_max,
+# rotation_max_degree, cutout_size based on input image size
+# set hyper params translate_max=16, cutout_max_size=16 for 32 x 32 images
+augmenter = PolicyAugmentation(cifar10_policy, translate_max=16, cutout_max_size=16) 
 
 # shuffle and apply batching on the pipeline
 batch_size = 32
@@ -154,3 +157,40 @@ show_images(augmented_images) # show augmented images
 
 ![Original Images](../../images/svhn_images.png)
 ![Augmented Images](../../images/svhn_augmented_images.png)
+
+**Example 3**: Using `PolicyAugmentation` with a custom data augmentation policy
+
+```python
+import tensorflow as tf
+import tensorflow_datasets as tfds
+from image_augmentation.image import PolicyAugmentation
+
+flowers_ds = tfds.load("tf_flowers", split='train', try_gcs=True)
+
+# use a custom augmentation policy,
+# an augmentation policy is a nested list of multiple tuples
+# each entry in the policy is a subpolicy which contains the 
+# image op(s) and their levels
+# - a subpolicy is of format ("OpName", probability, level)
+# - probability decides the likeliness of applying the op
+# - each level must be in range [0, 10)
+custom_policy = [
+    [("ShearX", 0.7, 6), ("Cutout", 0.5, 9)],
+    [("TranslateX", 0.3, 3), ("Sharpness", 0.8, 9), ("Invert", 0.6, 1)],
+    [("Posterize", 0.8, 1), ("Equalize", 0.3, 2), ("TranslateY", 0.3, 6)],
+    [("Color", 0.4, 8), ("Contrast", 0.7, 9)]
+]
+augmenter = PolicyAugmentation(custom_policy)
+
+# fetch a few images and resize them to 331 x 331
+images = [tf.image.resize(sample['image'], (331, 331))
+          for sample in flowers_ds.take(20)]
+images = tf.cast(images, tf.uint8) # TODO: fix PolicyAugmentation operability with tf.float32 images
+show_images(images) # show original images
+
+# PolicyAugmentation class uses a few hyperparameters for translate_max,
+# rotation_max_degree, cutout_size based on input image size
+# which can be ignored here, default hyperparameters are basis input 331 x 331
+augmented_images = augmenter(images)
+show_images(augmented_images) # show augmented images
+```
