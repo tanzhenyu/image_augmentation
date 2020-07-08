@@ -136,11 +136,11 @@ from image_augmentation.image import PolicyAugmentation, autoaugment_policy
 ds = tfds.load('svhn_cropped', split='train', as_supervised=True)
 
 # use AutoAugment policy for SVHN
-cifar10_policy = autoaugment_policy("reduced_svhn")
+svhn_policy = autoaugment_policy("reduced_svhn")
 # PolicyAugmentation class uses a few hyperparameters for translate_max,
 # rotation_max_degree, cutout_size based on input image size
 # set hyper params translate_max=16, cutout_max_size=16 for 32 x 32 images
-augmenter = PolicyAugmentation(cifar10_policy, translate_max=16, cutout_max_size=16) 
+augmenter = PolicyAugmentation(svhn_policy, translate_max=16, cutout_max_size=16) 
 
 # shuffle and apply batching on the pipeline
 batch_size = 32
