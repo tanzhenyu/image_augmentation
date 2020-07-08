@@ -236,12 +236,15 @@ def randomly_select_subpolicy(policy):
 
 
 class PolicyAugmentation:
-    def __init__(self, policy, translate_max=150, rotate_max_degree=30, cutout_max_size=60):
+    def __init__(self, policy, translate_max=150, rotate_max_degree=30, cutout_max_size=60, seed=None):
         self.translate_max = translate_max
         self.rotate_max_degree = rotate_max_degree
         self.cutout_max_size = cutout_max_size
         self.args_level = levels_to_args(translate_max, rotate_max_degree, cutout_max_size)
         self.policy = policy
+
+        if seed is not None:
+            tf.random.set_seed(seed)
 
     def apply(self, images):
         images = tf.convert_to_tensor(images)
