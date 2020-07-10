@@ -47,60 +47,57 @@ def get_args():
         '--wrn-dropout',
         default=0.0,
         type=float,
-        help='dropout value for WideResNet blocks')
+        help='dropout value for WideResNet blocks, default=0.0, no dropout')
+    parser.add_argument(
+        '--cutout',
+        default='on',
+        choices=['on', 'off'],
+        help='use random Cutout for data augmentation, default=on')
     parser.add_argument(
         '--auto-augment',
         default=False,
         const=True,
         action='store_const',
-        help="apply AutoAugment policy for data augmentation on training "
-    )
+        help="apply AutoAugment policy for data augmentation on training")
     parser.add_argument(
         '--dataset',
         default='cifar10',
         choices=["cifar10", "reduced_cifar10", "svhn",
                  "reduced_svhn", "imagenet", "reduced_imagenet"],
         help='dataset that is to be used for training and evaluating the model, '
-             'default="cifar10"'
-    )
+             'default="cifar10"')
     parser.add_argument(
         '--data-dir',
         required=True,
         type=str,
         help='local or GCS location for accessing data with TFDS '
-             '(directory for tensorflow_datasets)'
-    )
+             '(directory for tensorflow_datasets)')
     parser.add_argument(
         '--opt',
         default='sgdr',
         choices=["sgd", "adam", "sgdr"],
         help='optimizer that is to be used for training, '
-             'default="sgd"'
-    )
+             'default="sgd"')
     parser.add_argument(
         '--init-lr',
         default=0.01,
         type=float,
-        help='initial learning rate for training'
-    )
+        help='initial learning rate for training, default=0.01')
     parser.add_argument(
         '--sgdr-t0',
         default=10,
         type=float,
-        help='number of steps to decay over for SGDR'
-    )
+        help='number of steps to decay over for SGDR, default=10')
     parser.add_argument(
         '--sgdr-t-mul',
         default=2,
         type=int,
-        help='number of iterations in ith period for SGDR'
-    )
+        help='number of iterations in ith period for SGDR, default=2')
     parser.add_argument(
         '--weight-decay',
         default=10e-4,
         type=float,
-        help='weight decay of training step'
-    )
+        help='weight decay of training step, default=10e-4')
     parser.add_argument(
         '--verbosity',
         choices=['DEBUG', 'ERROR', 'FATAL', 'INFO', 'WARN'],
@@ -183,7 +180,10 @@ def main(args):
     wrn.summary()
 
     inp = keras.layers.Input(inp_shape, name='image_input')
-    x = baseline_augment(inp)
+    if args.cutout == 'off' and (args.dataset.endswith("cifar10") or args.dataset.endswith("svhn")):
+        x = baseline_augment(inp, cutout=False)
+    else:
+        x = baseline_augment(inp)
 
     # mean normalization of CIFAR10, SVHN require that images be supplied
     if args.dataset.endswith("cifar10") or args.dataset.endswith("svhn"):
@@ -243,10 +243,9 @@ def main(args):
         augmenter = PolicyAugmentation(policy, translate_max=16, cutout_max_size=16)
 
         def augment_map_fn(images, labels):
-            # TODO: devise a fix so as to remove tf.py_function call
             augmented_images = tf.py_function(augmenter, [images], images.dtype)
             return augmented_images, labels
-        train_ds = train_ds.map(augment_map_fn) # refrain from using AUTOTUNE here, breaks the pipeline
+        train_ds = train_ds.map(augment_map_fn)  # refrain from using AUTOTUNE here, tf.py_func cannot parallel execute
 
     # prefetch dataset for faster access in case of larger datasets only
     if args.dataset in ['svhn', 'imagenet']:

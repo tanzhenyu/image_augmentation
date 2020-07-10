@@ -11,4 +11,3 @@ DATA_DIR=~/tensorflow_datasets/
 python3 -m image_augmentation.ai_platform.train_wrn --job-dir=${JOB_DIR} \
     --epochs=${EPOCHS} --batch-size=${BATCH_SIZE} --wrn-depth=${WRN_DEPTH} \
     --wrn-k=${WRN_K} --auto-augment --dataset=${DATASET} --data-dir=${DATA_DIR} \
-    --opt sgdr --sgdr-t0 200 --sgdr-t-mul 1

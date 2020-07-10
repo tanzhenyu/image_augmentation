@@ -20,11 +20,12 @@ def cifar_standardization(x, data_samples):
     return x
 
 
-def cifar_baseline_augmentation(x):
+def cifar_baseline_augmentation(x, cutout=True):
     x = RandomFlip(mode='horizontal', name='h_flip')(x)
     x = ZeroPadding2D((4, 4), name='padding')(x)
     x = RandomCrop(32, 32, name='crop')(x)
-    x = RandomCutout(16, name='cutout')(x)
+    if cutout:
+        x = RandomCutout(16, name='cutout')(x)
     return x
 
 
