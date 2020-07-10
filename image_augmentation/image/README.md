@@ -28,14 +28,14 @@ These op(s) internally make use of `tfa.image.transform` which is implemented us
 # Image Data Augmentation
 
 AutoAugment uses an augmentation policy consisting of multiple sub-policies.
-Each of the subpolicy has two image operations associated with a probability and magnitude of effect (some image operations like `AutoContrast`, `Invert`, `Equalize` do not have any effect of `magnitude` parameter).
+Each subpolicy has two image operations associated with a probability and magnitude of effect (some image operations like `AutoContrast`, `Invert`, `Equalize` do not have any effect of `magnitude` parameter).
 For any particular image of the training set, we apply a subpolicy chosen randomly from the AutoAugment policy.
 The corresponding image op(s) from the selected subpolicy are then applied on the image basis their individual probabilities.
 
 The AutoAugment paper provides details for policies found on 3 datasets:
-1. Reduced ImageNet [ [policy](./policy_augmentation.py#L92-L118) ]
-2. Reduced SVHN [ [policy](./policy_augmentation.py#L65-L91) ]
-3. Reduced CIFAR-10 [ [policy](./policy_augmentation.py#L38-L64) ]
+1. Reduced ImageNet [[policy](./policy_augmentation.py#L92-L118)]
+2. Reduced SVHN [[policy](./policy_augmentation.py#L65-L91)]
+3. Reduced CIFAR-10 [[policy](./policy_augmentation.py#L38-L64)]
 
 ## Usage
 

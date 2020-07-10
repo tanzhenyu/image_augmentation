@@ -1,20 +1,26 @@
 import tensorflow as tf
 
+IMAGE_DTYPES = [
+    tf.uint8, tf.float32, tf.float16, tf.float64
+]
 GRAY = tf.constant(128)
 
 
 @tf.function
 def invert(image):
-    image = tf.convert_to_tensor(image)
-
+    """
+    Inverts the pixels of an image.
+    Args:
+        image: An int or float tensor of shape `[height, width, num_channels]`
+    Returns:
+        A tensor with same shape and type as that of `image`.
+    """
     inv_image = 255 - image
     return inv_image
 
 
 @tf.function
 def cutout(image, size=16, color=None):
-    image = tf.convert_to_tensor(image)
-
     image_shape = tf.shape(image)
     height, width, channels = image_shape[0], image_shape[1], image_shape[2]
 
@@ -46,7 +52,6 @@ def cutout(image, size=16, color=None):
 
 @tf.function
 def solarize(image, threshold):
-    image = tf.convert_to_tensor(image)
     threshold = tf.cast(threshold, image.dtype)
 
     inverted_image = invert(image)
@@ -58,23 +63,24 @@ def solarize(image, threshold):
 
 @tf.function
 def posterize(image, num_bits):
-    image = tf.convert_to_tensor(image)
-    image = tf.cast(image, tf.uint8)
+    orig_dtype = image.dtype
+    image = tf.image.convert_image_dtype(image, tf.uint8)
 
     num_bits = tf.cast(num_bits, tf.int32)
     mask = tf.cast(2 ** (8 - num_bits) - 1, tf.uint8)
     mask = tf.bitwise.invert(mask)
 
     posterized_image = tf.bitwise.bitwise_and(image, mask)
+    posterized_image = tf.image.convert_image_dtype(posterized_image, orig_dtype)
     return posterized_image
 
 
 @tf.function
 def equalize(image):
-    image = tf.convert_to_tensor(image)
     orig_dtype = image.dtype
     orig_shape = tf.shape(image)
 
+    image = tf.image.convert_image_dtype(image, tf.uint8)
     image = tf.cast(image, tf.int32)
 
     def equalize_grayscale(image_channel):
@@ -117,25 +123,22 @@ def equalize(image):
 
 @tf.function
 def auto_contrast(image):
-    image = tf.convert_to_tensor(image)
     orig_dtype = image.dtype
+    image = tf.image.convert_image_dtype(image, tf.float32)
 
-    image = tf.cast(image, tf.float32)
     min_val, max_val = tf.reduce_min(image, axis=[0, 1]), tf.reduce_max(image, axis=[0, 1])
 
     bright = tf.constant(255., tf.float32)
 
     norm_image = (image - min_val) / (max_val - min_val)
     norm_image = norm_image * bright
-    norm_image = tf.cast(norm_image, orig_dtype)
+
+    norm_image = tf.image.convert_image_dtype(norm_image, orig_dtype)
     return norm_image
 
 
 @tf.function
 def blend(image1, image2, factor):
-    image1 = tf.convert_to_tensor(image1)
-    image2 = tf.convert_to_tensor(image2)
-
     orig_dtype = image2.dtype
 
     if factor == 0.0:
@@ -143,31 +146,27 @@ def blend(image1, image2, factor):
     elif factor == 1.0:
         return image2
 
-    image1, image2 = tf.cast(image1, tf.float32), tf.cast(image2, tf.float32)
+    image1, image2 = tf.image.convert_image_dtype(image1, tf.float32), tf.image.convert_image_dtype(image2, tf.float32)
     scaled_diff = (image2 - image1) * factor
 
     blended_image = image1 + scaled_diff
     blended_image = tf.clip_by_value(blended_image, 0.0, 255.0)
-    blended_image = tf.cast(blended_image, orig_dtype)
+
+    blended_image = tf.image.convert_image_dtype(blended_image, orig_dtype)
     return blended_image
 
 
 @tf.function
 def color(image, magnitude):
-    image = tf.convert_to_tensor(image)
-    orig_dtype = image.dtype
     tiled_gray_image = tf.image.grayscale_to_rgb(tf.image.rgb_to_grayscale(image))
-
     colored_image = blend(tiled_gray_image, image, magnitude)
-    colored_image = tf.cast(colored_image, orig_dtype)
     return colored_image
 
 
 @tf.function
 def sharpness(image, magnitude):
-    image = tf.convert_to_tensor(image)
     orig_dtype = image.dtype
-    image = tf.cast(image, tf.float32)
+    image = tf.image.convert_image_dtype(image, tf.float32)
 
     blur_kernel = tf.constant([[1, 1, 1],
                                [1, 5, 1],
@@ -192,29 +191,26 @@ def sharpness(image, magnitude):
     blurred_image = tf.where(padded_mask == 1, padded_blurred_image, image)
 
     sharpened_image = blend(blurred_image, image, magnitude)
-    sharpened_image = tf.cast(sharpened_image, orig_dtype)
+
+    sharpened_image = tf.image.convert_image_dtype(sharpened_image, orig_dtype)
     return sharpened_image
 
 
 @tf.function
 def sample_pairing(image1, image2, weight):
     paired_image = blend(image1, image2, weight)
-    paired_image = tf.cast(paired_image, image1.dtype)
     return paired_image
 
 
 @tf.function
 def brightness(image, magnitude):
-    image = tf.convert_to_tensor(image)
     dark = tf.zeros_like(image)
-
     bright_image = blend(dark, image, magnitude)
     return bright_image
 
 
 @tf.function
 def contrast(image, magnitude):
-    image = tf.convert_to_tensor(image)
     orig_dtype = image.dtype
 
     grayed_image = tf.image.rgb_to_grayscale(image)
@@ -231,5 +227,6 @@ def contrast(image, magnitude):
     mean_image = tf.image.grayscale_to_rgb(mean_image)
 
     contrast_image = blend(mean_image, image, magnitude)
-    contrast_image = tf.cast(contrast_image, orig_dtype)
+
+    contrast_image = tf.image.convert_image_dtype(contrast_image, orig_dtype)
     return contrast_image

@@ -72,6 +72,18 @@ def get_args():
         help='initial learning rate for training'
     )
     parser.add_argument(
+        '--sgdr-t0',
+        default=10,
+        type=float,
+        help='number of steps to decay over for SGDR'
+    )
+    parser.add_argument(
+        '--sgdr-t-mul',
+        default=2,
+        type=int,
+        help='number of iterations in ith period for SGDR'
+    )
+    parser.add_argument(
         '--weight-decay',
         default=10e-4,
         type=float,
@@ -112,9 +124,6 @@ DATASET = {
     "imagenet": imagenet,
     "reduced_imagenet": reduced_imagenet
 }
-
-SGDR_T0 = 10
-SGDR_T_MUL = 2
 
 
 def main(args):
@@ -178,7 +187,7 @@ def main(args):
     model.summary()
 
     # use an SGDR optimizer with weight decay
-    lr_schedule = keras.experimental.CosineDecayRestarts(args.init_lr, SGDR_T0, SGDR_T_MUL)
+    lr_schedule = keras.experimental.CosineDecayRestarts(args.init_lr, args.sgdr_t0, args.sgdr_t_mul)
     opt = tfa.optimizers.SGDW(args.weight_decay, lr_schedule, momentum=0.9)
 
     metrics = [keras.metrics.SparseCategoricalAccuracy()]
