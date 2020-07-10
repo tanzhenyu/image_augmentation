@@ -44,6 +44,11 @@ def get_args():
         type=int,
         help='widening factor of Wide ResNet, default=2')
     parser.add_argument(
+        '--wrn-dropout',
+        default=0.0,
+        type=float,
+        help='dropout value for WideResNet blocks')
+    parser.add_argument(
         '--auto-augment',
         default=False,
         const=True,
@@ -64,6 +69,13 @@ def get_args():
         type=str,
         help='local or GCS location for accessing data with TFDS '
              '(directory for tensorflow_datasets)'
+    )
+    parser.add_argument(
+        '--opt',
+        default='sgdr',
+        choices=["sgd", "adam", "sgdr"],
+        help='optimizer that is to be used for training, '
+             'default="sgd"'
     )
     parser.add_argument(
         '--init-lr',
@@ -167,7 +179,7 @@ def main(args):
             plt.savefig(fig_file, format="pdf")
         print("Wrote file to", fig_file_path)
 
-    wrn = WideResNet(inp_shape, depth=args.wrn_depth, k=args.wrn_k, num_classes=num_classes)
+    wrn = WideResNet(inp_shape, depth=args.wrn_depth, k=args.wrn_k, dropout=args.wrn_dropout, num_classes=num_classes)
     wrn.summary()
 
     inp = keras.layers.Input(inp_shape, name='image_input')
@@ -187,8 +199,18 @@ def main(args):
     model.summary()
 
     # use an SGDR optimizer with weight decay
-    lr_schedule = keras.experimental.CosineDecayRestarts(args.init_lr, args.sgdr_t0, args.sgdr_t_mul)
-    opt = tfa.optimizers.SGDW(args.weight_decay, lr_schedule, momentum=0.9)
+    if args.opt == 'sgdr':
+        lr = keras.experimental.CosineDecayRestarts(args.init_lr, args.sgdr_t0, args.sgdr_t_mul)
+    else:
+        lr = args.init_lr
+
+    if args.opt.startswith('sgd'):
+        if args.weight_decay == 0:
+            opt = keras.optimizers.SGD(lr, momentum=0.9)
+        else:
+            opt = tfa.optimizers.SGDW(args.weight_decay, lr, momentum=0.9)
+    elif args.opt == 'adam':
+        opt = keras.optimizers.Adam(args.init_lr)
 
     metrics = [keras.metrics.SparseCategoricalAccuracy()]
     # use top-5 accuracy metric with ImageNet and reduced-ImageNet only
