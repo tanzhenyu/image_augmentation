@@ -73,7 +73,7 @@ def get_args():
         help='local or GCS location for accessing data with TFDS '
              '(directory for tensorflow_datasets)')
     parser.add_argument(
-        '--opt',
+        '--optimizer',
         default='sgdr',
         choices=["sgd", "adam", "sgdr"],
         help='optimizer that is to be used for training, '
@@ -93,6 +93,18 @@ def get_args():
         default=2,
         type=int,
         help='number of iterations in ith period for SGDR, default=2')
+    parser.add_argument(
+        '--drop-lr-by',
+        default=0.0,
+        type=float,
+        help='optimizer that is to be used for training, '
+             'default=0.0, off')
+    parser.add_argument(
+        '--drop-lr-every',
+        default=60,
+        type=int,
+        help='optimizer that is to be used for training, '
+             'default=0.0, off')
     parser.add_argument(
         '--weight-decay',
         default=10e-4,
@@ -199,17 +211,17 @@ def main(args):
     model.summary()
 
     # use an SGDR optimizer with weight decay
-    if args.opt == 'sgdr':
+    if args.optimizer == 'sgdr':
         lr = keras.experimental.CosineDecayRestarts(args.init_lr, args.sgdr_t0, args.sgdr_t_mul)
     else:
         lr = args.init_lr
 
-    if args.opt.startswith('sgd'):
+    if args.optimizer.startswith('sgd'):
         if args.weight_decay == 0:
             opt = keras.optimizers.SGD(lr, momentum=0.9)
         else:
             opt = tfa.optimizers.SGDW(args.weight_decay, lr, momentum=0.9)
-    elif args.opt == 'adam':
+    else:  # adam
         opt = keras.optimizers.Adam(args.init_lr)
 
     metrics = [keras.metrics.SparseCategoricalAccuracy()]
@@ -222,6 +234,13 @@ def main(args):
     # prepare tensorboard logging
     tb_path = args.job_dir + '/tensorboard'
     callbacks = [keras.callbacks.TensorBoard(tb_path)]
+
+    # drop LR after intervals, only if using SGD
+    if args.drop_lr_by and args.optimizer != 'sgdr':
+        callbacks.append(keras.callbacks.LearningRateScheduler(
+            lambda epoch: args.init_lr - ((epoch // args.drop_lr_every) * args.drop_lr_by),
+            verbose=1))
+
     print("Using tensorboard directory as", tb_path)
 
     # cache the dataset only if possible
