@@ -1,5 +1,5 @@
 # use base image
-FROM tensorflow/tensorflow:2.3.0rc0-gpu
+FROM tensorflow/tensorflow:2.3.0rc1-gpu
 
 # set working directory
 WORKDIR /root
@@ -9,7 +9,7 @@ COPY . .
 
 # install dependencies
 RUN pip install --upgrade pip
-RUN pip install tensorboard tensorflow_datasets tensorflow_addons matplotlib google-cloud-storage
+RUN pip install tensorboard tensorflow_datasets tfa-nightly matplotlib google-cloud-storage
 RUN pip install --no-deps -e .
 
 # run training script
