@@ -49,9 +49,10 @@ def get_args():
         type=float,
         help='dropout value for WideResNet blocks, default=0.0, no dropout')
     parser.add_argument(
-        '--cutout',
-        default='on',
-        choices=['on', 'off'],
+        '--no-cutout',
+        default=False,
+        const=True,
+        action='store_const',
         help='use random Cutout for data augmentation, default=on')
     parser.add_argument(
         '--auto-augment',
@@ -105,6 +106,12 @@ def get_args():
         type=int,
         help='optimizer that is to be used for training, '
              'default=0.0, off')
+    parser.add_argument(
+        '--sgd-nesterov',
+        default=False,
+        const=True,
+        action='store_const',
+        help="use Nesterov accelerated gradient with SGD optimizer")
     parser.add_argument(
         '--weight-decay',
         default=10e-4,
@@ -192,7 +199,7 @@ def main(args):
     wrn.summary()
 
     inp = keras.layers.Input(inp_shape, name='image_input')
-    if args.cutout == 'off' and (args.dataset.endswith("cifar10") or args.dataset.endswith("svhn")):
+    if args.no_cutout and (args.dataset.endswith("cifar10") or args.dataset.endswith("svhn")):
         x = baseline_augment(inp, cutout=False)
     else:
         x = baseline_augment(inp)
@@ -218,9 +225,9 @@ def main(args):
 
     if args.optimizer.startswith('sgd'):
         if args.weight_decay == 0:
-            opt = keras.optimizers.SGD(lr, momentum=0.9)
+            opt = keras.optimizers.SGD(lr, momentum=0.9, nesterov=args.sgd_nesterov)
         else:
-            opt = tfa.optimizers.SGDW(args.weight_decay, lr, momentum=0.9)
+            opt = tfa.optimizers.SGDW(args.weight_decay, lr, momentum=0.9, nesterov=args.sgd_nesterov)
     else:  # adam
         opt = keras.optimizers.Adam(args.init_lr)
 
@@ -238,7 +245,7 @@ def main(args):
     # drop LR after intervals, only if using SGD
     if args.drop_lr_by and args.optimizer != 'sgdr':
         callbacks.append(keras.callbacks.LearningRateScheduler(
-            lambda epoch: args.init_lr - ((epoch // args.drop_lr_every) * args.drop_lr_by),
+            lambda epoch: args.init_lr * (args.drop_lr_by ** (epoch // args.drop_lr_every)),
             verbose=1))
 
     print("Using tensorboard directory as", tb_path)
