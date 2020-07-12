@@ -53,13 +53,13 @@ def get_args():
         default=False,
         const=True,
         action='store_const',
-        help='use random Cutout for data augmentation, default=on')
+        help='use random Cutout for data augmentation, off by default (uses Cutout)')
     parser.add_argument(
         '--auto-augment',
         default=False,
         const=True,
         action='store_const',
-        help="apply AutoAugment policy for data augmentation on training")
+        help="apply AutoAugment policy for data augmentation on training, off by default (no AutoAugment)")
     parser.add_argument(
         '--dataset',
         default='cifar10',
@@ -98,20 +98,20 @@ def get_args():
         '--drop-lr-by',
         default=0.0,
         type=float,
-        help='optimizer that is to be used for training, '
+        help='drop learning rate by a factor (only when using SGD, not SGDR), '
              'default=0.0, off')
     parser.add_argument(
         '--drop-lr-every',
         default=60,
         type=int,
-        help='optimizer that is to be used for training, '
-             'default=0.0, off')
+        help='drop learning rate duration of epochs (only when using SGD, not SGDR), '
+             'default=60')
     parser.add_argument(
         '--sgd-nesterov',
         default=False,
         const=True,
         action='store_const',
-        help="use Nesterov accelerated gradient with SGD optimizer")
+        help='use Nesterov accelerated gradient with SGD optimizer')
     parser.add_argument(
         '--weight-decay',
         default=10e-4,
