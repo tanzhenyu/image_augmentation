@@ -16,7 +16,7 @@ from image_augmentation.image import PolicyAugmentation, autoaugment_policy
 
 
 def get_args():
-    parser = argparse.ArgumentParser(description='Train WRN on Google AI Platform')
+    parser = argparse.ArgumentParser(description='Train WideResNet on Google AI Platform')
 
     parser.add_argument(
         '--job-dir',
@@ -65,8 +65,7 @@ def get_args():
         default='cifar10',
         choices=["cifar10", "reduced_cifar10", "svhn",
                  "reduced_svhn", "imagenet", "reduced_imagenet"],
-        help='dataset that is to be used for training and evaluating the model, '
-             'default="cifar10"')
+        help='dataset that is to be used for training and evaluating the model, default="cifar10"')
     parser.add_argument(
         '--data-dir',
         required=True,
@@ -77,8 +76,7 @@ def get_args():
         '--optimizer',
         default='sgdr',
         choices=["sgd", "adam", "sgdr"],
-        help='optimizer that is to be used for training, '
-             'default="sgd"')
+        help='optimizer that is to be used for training, default="sgd"')
     parser.add_argument(
         '--init-lr',
         default=0.01,
@@ -111,7 +109,7 @@ def get_args():
         default=False,
         const=True,
         action='store_const',
-        help='use Nesterov accelerated gradient with SGD optimizer')
+        help='use Nesterov accelerated gradient with SGD optimizer, by default Nesterov is off')
     parser.add_argument(
         '--weight-decay',
         default=10e-4,
