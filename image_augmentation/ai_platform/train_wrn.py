@@ -217,7 +217,10 @@ def main(args):
     model = keras.Model(inp, x, name='WRN')
     model.summary()
 
-    # use an SGDR optimizer with weight decay
+    # any one of the following:
+    # - use an SGD optimizer  w/ or w/o weight decay (SGDW / SGD) or just Adam
+    # - use a callable learning rate schedule for SGDR or not
+    # - use SGD Nesterov or not
     if args.optimizer == 'sgdr':
         lr = keras.experimental.CosineDecayRestarts(args.init_lr, args.sgdr_t0, args.sgdr_t_mul)
     else:
