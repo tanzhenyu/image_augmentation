@@ -20,8 +20,10 @@ WRN_DEPTH=28
 WRN_K=10
 
 REGION=us-central1
-SCALE_TIER=basic-gpu
 
+# Google AI Platform Runtime(s) do not provide TFv2.3 yet
+
+# SCALE_TIER=basic-gpu
 # PYTHON_VERSION=3.7
 # RUNTIME_VERSION=2.1
 
@@ -38,7 +40,12 @@ SCALE_TIER=basic-gpu
 #   --epochs ${EPOCHS} \
 #   --dataset ${DATASET}
 
+# Using a docker container for training on TFv2.3 on AI Platform
+
 IMAGE_URI=gcr.io/ml-dl-tfrc-tpu/image_augmentation/wrn_trainer
+
+docker build -t ${IMAGE_URI} .
+docker push ${IMAGE_URI}
 
 gcloud ai-platform jobs submit training "${JOB_NAME}" \
     --master-image-uri ${IMAGE_URI} \
