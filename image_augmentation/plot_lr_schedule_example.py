@@ -1,20 +1,23 @@
 import tensorflow as tf
 from matplotlib import pyplot as plt
 
-num_images = 50000
-batch_size = 256
+sgdr_t0 = 10
+sgdr_t_mul = 2
 
-train_steps = 10
-step_size = 1.0 / (num_images // batch_size)
+num_images = 50000  # CIFAR-10
+batch_size = 128
 
-lr_schedule = tf.keras.experimental.CosineDecayRestarts(0.01, train_steps)
+steps_per_epoch = (num_images // batch_size)
+step_size = 1.0 / steps_per_epoch
+
+lr_schedule = tf.keras.experimental.CosineDecayRestarts(0.01, sgdr_t0, sgdr_t_mul)
 
 num_epochs = 200
-epochs = tf.range(step_size, num_epochs + 1, step_size)
+batches = tf.linspace(step_size, num_epochs, steps_per_epoch)
 
-lrs = [lr_schedule(e) for e in epochs]
+lrs = tf.map_fn(lr_schedule, batches)
 
-plt.plot(epochs, lrs)
+plt.plot(batches, lrs)
 plt.xlabel("Epochs")
 plt.ylabel("Learning Rate")
 plt.show()

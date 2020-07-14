@@ -28,7 +28,7 @@ RUNTIME_VERSION=2.1
 #   --epochs ${EPOCHS} \
 #   --dataset ${DATASET}
 
-IMAGE_URI=gcr.io/ml-dl-tfrc-tpu/wrn_trainer
+IMAGE_URI=gcr.io/ml-dl-tfrc-tpu/image_augmentation/wrn_trainer
 
 gcloud ai-platform jobs submit training "${JOB_NAME}" \
     --master-image-uri ${IMAGE_URI} \

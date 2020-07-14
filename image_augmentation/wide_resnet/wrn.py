@@ -1,6 +1,7 @@
 from tensorflow.keras.layers import Conv2D
 from tensorflow.keras.layers import Activation, BatchNormalization, Add
 from tensorflow.keras.layers import GlobalAveragePooling2D, Dropout, Dense
+from tensorflow.keras.initializers import he_normal
 from tensorflow.keras import Input, Model
 
 from tensorflow.keras import backend as K
@@ -23,9 +24,11 @@ def _residual_block(input, num_filters=16, k=1,
     init = _relu(name=name + '/relu1')(init)
     if init.shape[CHANNEL_AXIS] != num_filters or name.endswith("block1"):
         branch = Conv2D(num_filters, (1, 1), strides=stride, padding='same',
+                        use_bias=False, kernel_initializer=he_normal(),
                         name=name + '/conv_identity_1x1')(init)
 
     x = Conv2D(num_filters, (3, 3), strides=stride, padding='same',
+               use_bias=False, kernel_initializer=he_normal(),
                name=name + '/conv1_3x3')(init)
 
     if dropout > 0.0:
@@ -34,6 +37,7 @@ def _residual_block(input, num_filters=16, k=1,
     x = _batch_norm(name=name + '/bn2')(x)
     x = _relu(name=name + '/relu2')(x)
     x = Conv2D(num_filters, (3, 3), strides=1, padding='same',
+               use_bias=False, kernel_initializer=he_normal(),
                name=name + '/conv2_3x3')(x)
 
     x = Add(name=name + '/add')([branch, x])
@@ -54,7 +58,8 @@ def WideResNet(input_shape, depth=28, k=10, dropout=0.0,
     inp = Input(input_shape, name='input')
 
     # conv1
-    x = Conv2D(16, (3, 3), padding='same', name='conv1/conv_3x3')(inp)
+    x = Conv2D(16, (3, 3), padding='same', use_bias=False,
+               kernel_initializer=he_normal(), name='conv1/conv_3x3')(inp)
 
     # conv2: n blocks
     for i in range(n):
@@ -80,7 +85,8 @@ def WideResNet(input_shape, depth=28, k=10, dropout=0.0,
     x = _relu(name='relu')(x)
 
     x = GlobalAveragePooling2D(name='avg_pool')(x)
-    x = Dense(num_classes, activation='softmax', name='preds')(x)
+    x = Dense(num_classes, activation='softmax', use_bias=False,
+              kernel_initializer=he_normal(), name='preds')(x)
 
     net = Model(inp, x, name=name)
     return net
