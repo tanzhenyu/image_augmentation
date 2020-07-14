@@ -215,42 +215,6 @@ def main(args):
     model = keras.Model(inp, x, name='WRN')
     model.summary()
 
-    # any one of the following:
-    # - use an SGD optimizer  w/ or w/o weight decay (SGDW / SGD) or just Adam
-    # - use a callable learning rate schedule for SGDR or not
-    # - use SGD Nesterov or not
-    if args.optimizer == 'sgdr':
-        lr = keras.experimental.CosineDecayRestarts(args.init_lr, args.sgdr_t0, args.sgdr_t_mul)
-    elif args.drop_lr_by:
-        lr = keras.optimizers.schedules.ExponentialDecay(args.init_lr, args.drop_lr_every,
-                                                         args.drop_lr_by, staircase=True)
-    else:
-        lr = args.init_lr
-
-    if args.optimizer.startswith('sgd'):
-        if args.weight_decay == 0:
-            opt = keras.optimizers.SGD(lr, momentum=0.9, nesterov=args.sgd_nesterov)
-        else:
-            opt = tfa.optimizers.SGDW(args.weight_decay, lr, momentum=0.9, nesterov=args.sgd_nesterov)
-    else:  # adam
-        if args.weight_decay == 0:
-            opt = keras.optimizers.Adam(lr)
-        else:
-            opt = tfa.optimizers.AdamW(args.weight_decay, lr)
-
-    metrics = [keras.metrics.SparseCategoricalAccuracy()]
-    # use top-5 accuracy metric with ImageNet and reduced-ImageNet only
-    if args.dataset.endswith("imagenet"):
-        metrics.append(keras.metrics.SparseTopKCategoricalAccuracy(k=5))
-
-    model.compile(opt, loss='sparse_categorical_crossentropy', metrics=metrics)
-
-    # prepare tensorboard logging
-    tb_path = args.job_dir + '/tensorboard'
-    callbacks = [keras.callbacks.TensorBoard(tb_path)]
-
-    print("Using tensorboard directory as", tb_path)
-
     # cache the dataset only if possible
     if args.dataset not in ['svhn', 'imagenet']:
         train_ds = train_ds.cache()
@@ -278,6 +242,46 @@ def main(args):
     if args.dataset in ['svhn', 'imagenet']:
         train_ds = train_ds.prefetch(tf.data.experimental.AUTOTUNE)
         val_ds = val_ds.prefetch(tf.data.experimental.AUTOTUNE)
+
+    # calculate steps per epoch for optimizer schedule num steps
+    steps_per_epoch = tf.data.experimental.cardinality(train_ds)
+
+    # any one of the following:
+    # - use an SGD optimizer w/ or w/o weight decay (SGDW / SGD) or just Adam
+    # - use a callable learning rate schedule for SGDR or not
+    # - use SGD Nesterov or not
+    if args.optimizer == 'sgdr':
+        lr = keras.experimental.CosineDecayRestarts(args.init_lr, steps_per_epoch * args.sgdr_t0,
+                                                    args.sgdr_t_mul)
+    elif args.drop_lr_by:
+        lr = keras.optimizers.schedules.ExponentialDecay(args.init_lr, steps_per_epoch * args.drop_lr_every,
+                                                         args.drop_lr_by, staircase=True)
+    else:
+        lr = args.init_lr
+
+    if args.optimizer.startswith('sgd'):
+        if args.weight_decay == 0:
+            opt = keras.optimizers.SGD(lr, momentum=0.9, nesterov=args.sgd_nesterov)
+        else:
+            opt = tfa.optimizers.SGDW(args.weight_decay, lr, momentum=0.9, nesterov=args.sgd_nesterov)
+    else:  # adam
+        if args.weight_decay == 0:
+            opt = keras.optimizers.Adam(lr)
+        else:
+            opt = tfa.optimizers.AdamW(args.weight_decay, lr)
+
+    metrics = [keras.metrics.SparseCategoricalAccuracy()]
+    # use top-5 accuracy metric with ImageNet and reduced-ImageNet only
+    if args.dataset.endswith("imagenet"):
+        metrics.append(keras.metrics.SparseTopKCategoricalAccuracy(k=5))
+
+    model.compile(opt, loss='sparse_categorical_crossentropy', metrics=metrics)
+
+    # prepare tensorboard logging
+    tb_path = args.job_dir + '/tensorboard'
+    callbacks = [keras.callbacks.TensorBoard(tb_path)]
+
+    print("Using tensorboard directory as", tb_path)
 
     # train the model
     model.fit(train_ds, validation_data=val_ds, epochs=args.epochs, callbacks=callbacks)

@@ -15,7 +15,12 @@ def invert(image):
     Returns:
         A tensor with same shape and type as that of `image`.
     """
+    orig_dtype = image.dtype
+    assert orig_dtype in IMAGE_DTYPES, "image with " + str(orig_dtype) + " is not supported for this operation"
+
+    image = tf.image.convert_image_dtype(image, tf.uint8)
     inv_image = 255 - image
+    inv_image = tf.image.convert_image_dtype(inv_image, orig_dtype, saturate=True)
     return inv_image
 
 
