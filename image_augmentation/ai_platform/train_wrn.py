@@ -249,12 +249,6 @@ def main(args):
     tb_path = args.job_dir + '/tensorboard'
     callbacks = [keras.callbacks.TensorBoard(tb_path)]
 
-    # drop LR after intervals, only if using SGD
-    if args.drop_lr_by and args.optimizer != 'sgdr':
-        callbacks.append(keras.callbacks.LearningRateScheduler(
-            lambda epoch: args.init_lr * (args.drop_lr_by ** (epoch // args.drop_lr_every)),
-            verbose=1))
-
     print("Using tensorboard directory as", tb_path)
 
     # cache the dataset only if possible
