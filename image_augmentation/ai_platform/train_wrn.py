@@ -221,6 +221,9 @@ def main(args):
     # - use SGD Nesterov or not
     if args.optimizer == 'sgdr':
         lr = keras.experimental.CosineDecayRestarts(args.init_lr, args.sgdr_t0, args.sgdr_t_mul)
+    elif args.drop_lr_by:
+        lr = keras.optimizers.schedules.ExponentialDecay(args.init_lr, args.drop_lr_every,
+                                                         args.drop_lr_by, staircase=True)
     else:
         lr = args.init_lr
 
@@ -230,7 +233,10 @@ def main(args):
         else:
             opt = tfa.optimizers.SGDW(args.weight_decay, lr, momentum=0.9, nesterov=args.sgd_nesterov)
     else:  # adam
-        opt = keras.optimizers.Adam(args.init_lr)
+        if args.weight_decay == 0:
+            opt = keras.optimizers.Adam(lr)
+        else:
+            opt = tfa.optimizers.AdamW(args.weight_decay, lr)
 
     metrics = [keras.metrics.SparseCategoricalAccuracy()]
     # use top-5 accuracy metric with ImageNet and reduced-ImageNet only

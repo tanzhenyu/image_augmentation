@@ -85,7 +85,7 @@ def WideResNet(input_shape, depth=28, k=10, dropout=0.0,
     x = _relu(name='relu')(x)
 
     x = GlobalAveragePooling2D(name='avg_pool')(x)
-    x = Dense(num_classes, activation='softmax', use_bias=False,
+    x = Dense(num_classes, activation='softmax',
               kernel_initializer=he_normal(), name='preds')(x)
 
     net = Model(inp, x, name=name)
