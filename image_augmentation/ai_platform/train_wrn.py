@@ -258,7 +258,7 @@ def main(args):
     elif args.drop_lr_by:
         lr = ExponentialDecayStaircaseIntervals(args.init_lr,
                                                 [(steps_per_epoch * epoch) for epoch in sorted(args.drop_lr_every)],
-                                                args.drop_lr_by, staircase=True)
+                                                args.drop_lr_by)
     else:
         lr = args.init_lr
 
