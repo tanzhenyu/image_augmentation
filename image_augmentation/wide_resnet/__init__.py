@@ -1,1 +1,2 @@
 from image_augmentation.wide_resnet.wrn import WideResNet
+from image_augmentation.wide_resnet.lr_schedule import ExponentialDecayStaircaseIntervals

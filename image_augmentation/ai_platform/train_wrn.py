@@ -7,7 +7,7 @@ import tensorflow_addons as tfa
 
 from matplotlib import pyplot as plt
 
-from image_augmentation.wide_resnet import WideResNet
+from image_augmentation.wide_resnet import WideResNet, ExponentialDecayStaircaseIntervals
 from image_augmentation.preprocessing import imagenet_standardization, imagenet_baseline_augmentation
 from image_augmentation.preprocessing import cifar_standardization, cifar_baseline_augmentation
 from image_augmentation.datasets import reduced_cifar10, reduced_svhn, reduced_imagenet
@@ -100,7 +100,8 @@ def get_args():
              'default=0.0, off')
     parser.add_argument(
         '--drop-lr-every',
-        default=60,
+        default=[],
+        action='append',
         type=int,
         help='drop learning rate duration of epochs (only when using SGD, not SGDR), '
              'default=60')
@@ -255,8 +256,9 @@ def main(args):
         lr = keras.experimental.CosineDecayRestarts(args.init_lr, steps_per_epoch * args.sgdr_t0,
                                                     args.sgdr_t_mul)
     elif args.drop_lr_by:
-        lr = keras.optimizers.schedules.ExponentialDecay(args.init_lr, steps_per_epoch * args.drop_lr_every,
-                                                         args.drop_lr_by, staircase=True)
+        lr = ExponentialDecayStaircaseIntervals(args.init_lr,
+                                                [(steps_per_epoch * epoch) for epoch in sorted(args.drop_lr_every)],
+                                                args.drop_lr_by, staircase=True)
     else:
         lr = args.init_lr
 
