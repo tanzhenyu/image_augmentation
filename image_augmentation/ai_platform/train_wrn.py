@@ -280,7 +280,8 @@ def main(args):
 
     # prepare tensorboard logging
     tb_path = args.job_dir + '/tensorboard'
-    callbacks = [keras.callbacks.TensorBoard(tb_path)]
+    checkpoint_path = args.job_dir + '/checkpoint'
+    callbacks = [keras.callbacks.TensorBoard(tb_path), keras.callbacks.ModelCheckpoint(checkpoint_path)]
 
     print("Using tensorboard directory as", tb_path)
 
