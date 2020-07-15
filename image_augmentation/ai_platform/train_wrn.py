@@ -245,6 +245,7 @@ def main(args):
 
     # calculate steps per epoch for optimizer schedule num steps
     steps_per_epoch = tf.data.experimental.cardinality(train_ds)
+    steps_per_epoch = steps_per_epoch.numpy()  # helps model optimizer become JSON serializable
 
     # any one of the following:
     # - use an SGD optimizer w/ or w/o weight decay (SGDW / SGD) or just Adam
