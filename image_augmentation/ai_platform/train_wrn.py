@@ -7,7 +7,7 @@ import tensorflow_addons as tfa
 
 from matplotlib import pyplot as plt
 
-from image_augmentation.wide_resnet import WideResNet, ExponentialDecayStaircaseIntervals
+from image_augmentation.wide_resnet import WideResNet
 from image_augmentation.preprocessing import imagenet_standardization, imagenet_baseline_augmentation
 from image_augmentation.preprocessing import cifar_standardization, cifar_baseline_augmentation
 from image_augmentation.datasets import reduced_cifar10, reduced_svhn, reduced_imagenet
@@ -256,9 +256,9 @@ def main(args):
         lr = keras.experimental.CosineDecayRestarts(args.init_lr, steps_per_epoch * args.sgdr_t0,
                                                     args.sgdr_t_mul)
     elif args.drop_lr_by:
-        lr = ExponentialDecayStaircaseIntervals(args.init_lr,
-                                                [(steps_per_epoch * epoch) for epoch in sorted(args.drop_lr_every)],
-                                                args.drop_lr_by)
+        lr_boundaries = [(steps_per_epoch * epoch) for epoch in sorted(args.drop_lr_every)]
+        lr_values = [args.init_lr * (args.drop_lr_by ** idx) for idx in range(len(lr_boundaries) + 1)]
+        lr = keras.optimizers.schedules.PiecewiseConstantDecay(lr_boundaries, lr_values)
     else:
         lr = args.init_lr
 
