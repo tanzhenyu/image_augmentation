@@ -76,7 +76,7 @@ def posterize(image, num_bits):
     mask = tf.bitwise.invert(mask)
 
     posterized_image = tf.bitwise.bitwise_and(image, mask)
-    posterized_image = tf.image.convert_image_dtype(posterized_image, orig_dtype)
+    posterized_image = tf.image.convert_image_dtype(posterized_image, orig_dtype, saturate=True)
     return posterized_image
 
 
