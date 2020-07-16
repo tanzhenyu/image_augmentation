@@ -189,6 +189,16 @@ def test_sample_pairing():
 
     plt.show()
 
+    float_image1 = tf.image.convert_image_dtype(image1, tf.float32)
+    float_image2 = tf.image.convert_image_dtype(image2, tf.float32)
+    paired_image = sample_pairing(image1, image2, 0.5)
+
+    plt.figure()
+    plt.imshow(paired_image.numpy())
+    plt.title("Applying SamplePairing on Image 1 and Image 2")
+
+    plt.show()
+
 
 def test_brightness():
     image = _rand_image()

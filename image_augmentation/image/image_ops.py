@@ -166,6 +166,8 @@ def equalize(image):
 
 @tf.function
 def auto_contrast(image):
+    _check_image_dtype(image)
+
     orig_dtype = image.dtype
     image = tf.image.convert_image_dtype(image, tf.float32)
 
@@ -182,6 +184,15 @@ def auto_contrast(image):
 
 @tf.function
 def blend(image1, image2, factor):
+    """Blends an image with another using `factor`.
+    Args:
+        image1: An int or float tensor of shape `[height, width, num_channels]`.
+        image2: An int or float tensor of shape `[height, width, num_channels]`.
+        factor: A 0-D float tensor with a weight value.
+    """
+    _check_image_dtype(image1)
+    _check_image_dtype(image2)
+
     orig_dtype = image2.dtype
 
     if factor == 0.0:
@@ -241,6 +252,14 @@ def sharpness(image, magnitude):
 
 @tf.function
 def sample_pairing(image1, image2, weight):
+    """Alias of `blend`. This is an implementation of SamplePairing
+    as described in "Data Augmentation by Pairing Samples for Images Classification"
+    by Inoue (https://arxiv.org/abs/1801.02929).
+    Args:
+        image1: An int or float tensor of shape `[height, width, num_channels]`.
+        image2: An int or float tensor of shape `[height, width, num_channels]`.
+        factor: A 0-D float tensor with a weight value.
+    """
     paired_image = blend(image1, image2, weight)
     return paired_image
 
