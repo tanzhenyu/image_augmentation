@@ -263,10 +263,13 @@ def main(args):
         lr = args.init_lr
 
     if args.optimizer.startswith('sgd'):
-        if args.weight_decay == 0:
-            opt = keras.optimizers.SGD(lr, momentum=0.9, nesterov=args.sgd_nesterov)
-        else:
-            opt = tfa.optimizers.SGDW(args.weight_decay, lr, momentum=0.9, nesterov=args.sgd_nesterov)
+        opt = keras.optimizers.SGD(lr, momentum=0.9, nesterov=args.sgd_nesterov)
+        # use L2 regularization for weight decaying
+        if args.weight_decay != 0:
+            l2 = keras.regularizers.L2(args.weight_decay)
+            for var in model.trainable_variables:
+                if 'kernel' in var.name:
+                    model.add_loss(lambda: l2(var))
     else:  # adam
         if args.weight_decay == 0:
             opt = keras.optimizers.Adam(lr)
