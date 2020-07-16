@@ -6,26 +6,44 @@ IMAGE_DTYPES = [
 GRAY = tf.constant(128)
 
 
+def _check_image_dtype(image):
+    assert image.dtype in IMAGE_DTYPES, "image with " + str(image.dtype) + " is not supported for this operation"
+
+
 @tf.function
 def invert(image):
-    """
-    Inverts the pixels of an image.
+    """Inverts the pixels of an `image`.
     Args:
-        image: An int or float tensor of shape `[height, width, num_channels]`
+        image: An int or float tensor of shape `[height, width, num_channels]`.
     Returns:
         A tensor with same shape and type as that of `image`.
     """
-    orig_dtype = image.dtype
-    assert orig_dtype in IMAGE_DTYPES, "image with " + str(orig_dtype) + " is not supported for this operation"
-
-    image = tf.image.convert_image_dtype(image, tf.uint8)
-    inv_image = 255 - image
-    inv_image = tf.image.convert_image_dtype(inv_image, orig_dtype, saturate=True)
+    _check_image_dtype(image)
+    if image.dtype == tf.uint8:
+        inv_image = 255 - image
+    else:
+        inv_image = 1. - image
     return inv_image
 
 
 @tf.function
 def cutout(image, size=16, color=None):
+    """This is an implementation of Cutout as described in "Improved
+    Regularization of Convolutional Neural Networks with Cutout" by
+    DeVries & Taylor (https://arxiv.org/abs/1708.04552).
+    It applies a random square patch of specified `size` over an `image`
+    and by replacing those pixels with value of `color`.
+    Args:
+        image: An int or float tensor of shape `[height, width, num_channels]`.
+        size: A 0-D int tensor with value that should be divisible by 2.
+        color: A single pixel value (grayscale) or tuple of 3 values (RGB),
+            in case a single value is used for RGB image the value is tiled.
+            Gray color (128) is used by default.
+    Returns:
+        A tensor with same shape and type as that of `image`.
+    """
+    _check_image_dtype(image)
+
     image_shape = tf.shape(image)
     height, width, channels = image_shape[0], image_shape[1], image_shape[2]
 
@@ -36,7 +54,10 @@ def cutout(image, size=16, color=None):
     uy, ux = tf.minimum(height, loc_y + size // 2), tf.minimum(width, loc_x + size // 2)
 
     if color is None:
-        color = tf.repeat(GRAY, channels)
+        if image.dtype == tf.uint8:
+            color = tf.repeat(GRAY, channels)
+        else:
+            color = tf.repeat(tf.cast(GRAY, tf.float32) / 255., channels)
     else:
         color = tf.convert_to_tensor(color)
     color = tf.cast(color, image.dtype)
@@ -57,17 +78,34 @@ def cutout(image, size=16, color=None):
 
 @tf.function
 def solarize(image, threshold):
+    """Inverts the pixels of an `image` above a certain `threshold`.
+    Args:
+        image: An int or float tensor of shape `[height, width, num_channels]`.
+        threshold: A 0-D tensor with single value.
+    Returns:
+        A tensor with same shape and type as that of `image`.
+    """
+    _check_image_dtype(image)
+
     threshold = tf.cast(threshold, image.dtype)
 
     inverted_image = invert(image)
-    mask = image < threshold
-
-    solarized_image = tf.where(mask, image, inverted_image)
+    solarized_image = tf.where(image < threshold, image, inverted_image)
     return solarized_image
 
 
 @tf.function
 def posterize(image, num_bits):
+    """Reduces the number of bits used to represent an `image`
+    for each color channel.
+    Args:
+        image: An int or float tensor of shape `[height, width, num_channels]`.
+        num_bits: A 0-D int tensor with single value.
+    Returns:
+        A tensor with same shape and type as that of `image`.
+    """
+    _check_image_dtype(image)
+
     orig_dtype = image.dtype
     image = tf.image.convert_image_dtype(image, tf.uint8)
 

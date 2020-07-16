@@ -31,6 +31,11 @@ def test_invert():
     pil_inv_image = np.array(ImageOps.invert(pil_image))
 
     _display_images(image, inv_image)
+
+    float_image = tf.image.convert_image_dtype(image, tf.float32)
+    float_inv_image = invert(float_image)
+    _display_images(float_image, float_inv_image)
+
     assert tf.reduce_all(inv_image == pil_inv_image)
 
 
@@ -43,6 +48,11 @@ def test_solarize():
     pil_sol_image = np.array(ImageOps.solarize(pil_image, threshold))
 
     _display_images(image, sol_image)
+
+    float_image = tf.image.convert_image_dtype(image, tf.float32)
+    float_sol_image = solarize(float_image, threshold / 255.)
+    _display_images(float_image, float_sol_image)
+
     assert tf.reduce_all(sol_image == pil_sol_image)
 
 
@@ -55,8 +65,15 @@ def test_cutout():
     gray = [128, ] * 3
     gray = tf.cast(gray, cut_image.dtype)
 
+    float_image = tf.image.convert_image_dtype(image, tf.float32)
+    float_cut_image = cutout(float_image)
+    _display_images(float_image, float_cut_image)
+
+    float_gray = [128 / 255., ] * 3
+    float_gray = tf.cast(float_gray, float_cut_image.dtype)
+
     # TODO: (warning!) improve this test to include more rigour
-    assert tf.reduce_any(cut_image == gray)
+    assert tf.reduce_any(cut_image == gray) and tf.reduce_any(float_cut_image == float_gray)
 
 
 def test_posterize():
@@ -68,6 +85,10 @@ def test_posterize():
 
     pil_image = Image.fromarray(image.numpy())
     pil_post_image = np.array(ImageOps.posterize(pil_image, bits))
+
+    float_image = tf.image.convert_image_dtype(image, tf.float32)
+    float_post_image = posterize(float_image, bits)
+    _display_images(float_image, float_post_image)
 
     assert tf.reduce_all(post_image == pil_post_image)
 
