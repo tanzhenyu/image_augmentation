@@ -120,10 +120,16 @@ def posterize(image, num_bits):
 
 @tf.function
 def equalize(image):
-    orig_dtype = image.dtype
-    orig_shape = tf.shape(image)
+    """Equalizes the `image` histogram. In case of an RGB image, equalization
+    individually for each channel.
+    Args:
+        image: An int or float tensor of shape `[height, width, num_channels]`.
+    Returns:
+        A tensor with same shape and type as that of `image`.
+    """
+    _check_image_dtype(image)
 
-    image = tf.image.convert_image_dtype(image, tf.uint8)
+    image = tf.image.convert_image_dtype(image, tf.uint8, saturate=True)
     image = tf.cast(image, tf.int32)
 
     def equalize_grayscale(image_channel):
@@ -148,7 +154,7 @@ def equalize(image):
         equalized_image_channel = tf.reshape(equalized_flat_image, current_shape)
         return equalized_image_channel
 
-    if orig_shape[-1] == 3:
+    if tf.shape(image)[-1] == 3:
         red_channel, green_channel, blue_channel = image[..., 0], image[..., 1], image[..., 2]
 
         red_equalized_image = equalize_grayscale(red_channel)
@@ -160,13 +166,13 @@ def equalize(image):
     else:
         equalized_image = equalize_grayscale(image)
 
-    equalized_image = tf.cast(equalized_image, orig_dtype)
+    equalized_image = tf.image.convert_image_dtype(equalized_image, image.dtype)
     return equalized_image
 
 
 @tf.function
 def auto_contrast(image):
-    """Normalizes image contrast by remapping the image histogram such
+    """Normalizes `image` contrast by remapping the `image` histogram such
     that the brightest pixel becomes 1.0 (float) / 255 (unsigned int) and
     darkest pixel becomes 0.
     Args:

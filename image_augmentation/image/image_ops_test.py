@@ -121,6 +121,10 @@ def test_equalize():
     pil_image = Image.fromarray(image.numpy())
     pil_eq_image = np.array(ImageOps.equalize(pil_image))
 
+    float_image = tf.image.convert_image_dtype(image, tf.float32)
+    float_eq_image = equalize(float_image)
+    _display_images(float_image, float_eq_image)
+
     assert tf.reduce_all(eq_image == pil_eq_image)
 
 
