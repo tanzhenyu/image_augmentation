@@ -2,10 +2,7 @@
 
 import tensorflow as tf
 
-IMAGE_DTYPES = [
-    tf.uint8, tf.float32, tf.float16, tf.float64
-]
-GRAY = tf.constant(128)
+IMAGE_DTYPES = [tf.uint8, tf.float32, tf.float16, tf.float64]
 
 
 def _check_image_dtype(image):
@@ -55,11 +52,12 @@ def cutout(image, size=16, color=None):
     ly, lx = tf.maximum(0, loc_y - size // 2), tf.maximum(0, loc_x - size // 2)
     uy, ux = tf.minimum(height, loc_y + size // 2), tf.minimum(width, loc_x + size // 2)
 
+    gray = tf.constant(128)
     if color is None:
         if image.dtype == tf.uint8:
-            color = tf.repeat(GRAY, channels)
+            color = tf.repeat(gray, channels)
         else:
-            color = tf.repeat(tf.cast(GRAY, tf.float32) / 255., channels)
+            color = tf.repeat(tf.cast(gray, tf.float32) / 255., channels)
     else:
         color = tf.convert_to_tensor(color)
     color = tf.cast(color, image.dtype)
@@ -313,6 +311,15 @@ def brightness(image, magnitude):
 
 @tf.function
 def contrast(image, magnitude):
+    """Adjusts the `magnitude` of contrast of an `image`.
+    Args:
+        image: An int or float tensor of shape `[height, width, num_channels]`.
+        magnitude: A 0-D float tensor with single value above 0.0.
+    Returns:
+        A tensor with same shape and type as that of `image`.
+    """
+    _check_image_dtype(image)
+
     orig_dtype = image.dtype
 
     grayed_image = tf.image.rgb_to_grayscale(image)
