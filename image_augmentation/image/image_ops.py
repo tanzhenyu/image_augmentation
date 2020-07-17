@@ -131,6 +131,7 @@ def equalize(image):
     """
     _check_image_dtype(image)
 
+    orig_dtype = image.dtype
     image = tf.image.convert_image_dtype(image, tf.uint8, saturate=True)
     image = tf.cast(image, tf.int32)
 
@@ -169,7 +170,7 @@ def equalize(image):
     else:
         equalized_image = equalize_grayscale(image)
 
-    equalized_image = tf.image.convert_image_dtype(equalized_image, image.dtype)
+    equalized_image = tf.image.convert_image_dtype(equalized_image, orig_dtype)
     return equalized_image
 
 
