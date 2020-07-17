@@ -253,8 +253,18 @@ def color(image, magnitude):
 
 @tf.function
 def sharpness(image, magnitude):
+    """Adjusts the `magnitude` of sharpness of an `image`.
+    Args:
+        image: An int or float tensor of shape `[height, width, num_channels]`.
+        magnitude: A 0-D float tensor with single value above 0.0.
+    Returns:
+        A tensor with same shape and type as that of `image`.
+    """
+    _check_image_dtype(image)
+
     orig_dtype = image.dtype
-    image = tf.image.convert_image_dtype(image, tf.float32)
+    image = tf.image.convert_image_dtype(image, tf.uint8)
+    image = tf.cast(image, tf.float32)
 
     blur_kernel = tf.constant([[1, 1, 1],
                                [1, 5, 1],
@@ -280,6 +290,7 @@ def sharpness(image, magnitude):
 
     sharpened_image = blend(blurred_image, image, magnitude)
 
+    sharpened_image = tf.cast(sharpened_image, tf.uint8)
     sharpened_image = tf.image.convert_image_dtype(sharpened_image, orig_dtype)
     return sharpened_image
 

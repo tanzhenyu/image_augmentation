@@ -183,6 +183,11 @@ def test_sharpness():
 
     _display_images(image, sharpened_image)
     max_deviation = tf.reduce_max(pil_sharpened_image - sharpened_image)
+
+    float_image = tf.image.convert_image_dtype(image, tf.float32)
+    float_sharpened_image = sharpness(float_image, factor)
+    _display_images(float_image, float_sharpened_image)
+
     assert tf.reduce_all(max_deviation < 5)
 
 
