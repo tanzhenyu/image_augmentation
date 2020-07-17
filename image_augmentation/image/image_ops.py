@@ -260,7 +260,7 @@ def sharpness(image, magnitude):
     _check_image_dtype(image)
 
     orig_dtype = image.dtype
-    image = tf.image.convert_image_dtype(image, tf.uint8)
+    image = tf.image.convert_image_dtype(image, tf.uint8, saturate=True)
     image = tf.cast(image, tf.float32)
 
     blur_kernel = tf.constant([[1, 1, 1],

@@ -245,7 +245,7 @@ def test_brightness():
 
 
 def test_contrast():
-    image = tf.image.decode_jpeg((tf.io.read_file("../../images/test_example.jpg")))
+    image = tf.image.decode_jpeg(tf.io.read_file("../../images/test_example.jpg"))
     factor = 2.0
     contrast_image = contrast(image, factor)
 
