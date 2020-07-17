@@ -199,7 +199,7 @@ def blend(image1, image2, factor):
     """
     _check_image_dtype(image1)
     _check_image_dtype(image2)
-
+    assert image1.dtype == image2.dtype, "image1 type should exactly match type of image2"
     orig_dtype = image2.dtype
 
     if factor == 0.0:
@@ -211,9 +211,8 @@ def blend(image1, image2, factor):
     scaled_diff = (image2 - image1) * factor
 
     blended_image = image1 + scaled_diff
-    blended_image = tf.clip_by_value(blended_image, 0.0, 255.0)
 
-    blended_image = tf.image.convert_image_dtype(blended_image, orig_dtype)
+    blended_image = tf.image.convert_image_dtype(blended_image, orig_dtype, saturate=True)
     return blended_image
 
 
@@ -321,21 +320,20 @@ def contrast(image, magnitude):
     _check_image_dtype(image)
 
     orig_dtype = image.dtype
+    image = tf.image.convert_image_dtype(image, tf.uint8, saturate=True)
 
     grayed_image = tf.image.rgb_to_grayscale(image)
     grayed_image = tf.cast(grayed_image, tf.int32)
-
     bins = tf.constant(256, tf.int32)
     histogram = tf.math.bincount(grayed_image, minlength=bins)
     histogram = tf.cast(histogram, tf.float32)
     mean = tf.reduce_sum(tf.cast(grayed_image, tf.float32)) / tf.reduce_sum(histogram)
     mean = tf.clip_by_value(mean, 0.0, 255.0)
 
-    mean_image = tf.ones_like(grayed_image, tf.float32) * mean
-    mean_image = tf.cast(mean_image, tf.uint8)
+    mean = tf.cast(mean, tf.uint8)
+    mean_image = tf.ones_like(grayed_image, tf.uint8) * mean
     mean_image = tf.image.grayscale_to_rgb(mean_image)
 
     contrast_image = blend(mean_image, image, magnitude)
-
-    contrast_image = tf.image.convert_image_dtype(contrast_image, orig_dtype)
+    contrast_image = tf.image.convert_image_dtype(contrast_image, orig_dtype, saturate=True)
     return contrast_image

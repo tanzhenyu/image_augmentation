@@ -257,4 +257,9 @@ def test_contrast():
     _display_images(image, contrast_image)
     _display_images(pil_contrast_image, contrast_image)
     max_deviation = tf.reduce_max(pil_contrast_image - contrast_image)
+
+    float_image = tf.image.convert_image_dtype(image, tf.float32)
+    float_contrast_image = contrast(float_image, factor)
+    _display_images(float_image, float_contrast_image)
+
     assert tf.reduce_all(max_deviation < 1)
