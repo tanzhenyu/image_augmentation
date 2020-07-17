@@ -164,7 +164,7 @@ def test_color():
 
 
 def test_sharpness():
-    image = tf.image.decode_jpeg(tf.io.read_file("/Users/swg/Desktop/a.jpg"))
+    image = tf.image.decode_jpeg(tf.io.read_file("../../images/test_example.jpg"))
     factor = 0.5
     sharpened_image = sharpness(image, factor)
 
@@ -179,10 +179,8 @@ def test_sharpness():
 
 
 def test_sample_pairing():
-    image1 = tf.image.decode_jpeg(
-        tf.io.read_file("/Volumes/Card/Datasets/flower_photos/roses/5060536705_b370a5c543_n.jpg"))
-    image2 = tf.image.decode_jpeg(
-        tf.io.read_file("/Volumes/Card/Datasets/flower_photos/daisy/2365428551_39f83f10bf_n.jpg"))
+    image1 = tf.image.decode_jpeg(tf.io.read_file("../../images/tf-flowers_test_example1.jpg"))
+    image2 = tf.image.decode_jpeg(tf.io.read_file("../../images/tf-flowers_test_example2.jpg"))
 
     paired_image = sample_pairing(image1, image2, 0.5)
 
@@ -229,7 +227,7 @@ def test_brightness():
 
 
 def test_contrast():
-    image = tf.image.decode_jpeg((tf.io.read_file("/Users/swg/Desktop/a.jpg")))
+    image = tf.image.decode_jpeg((tf.io.read_file("../../images/test_example.jpg")))
     factor = 2.0
     contrast_image = contrast(image, factor)
 
