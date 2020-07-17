@@ -158,18 +158,11 @@ def equalize(image):
         equalized_image_channel = tf.reshape(equalized_flat_image, current_shape)
         return equalized_image_channel
 
-    if tf.shape(image)[-1] == 3:
-        red_channel, green_channel, blue_channel = image[..., 0], image[..., 1], image[..., 2]
+    channels_first_image = tf.transpose(image, [2, 0, 1])
+    channels_first_equalized_image = tf.map_fn(equalize_grayscale, channels_first_image)
+    equalized_image = tf.transpose(channels_first_equalized_image, [1, 2, 0])
 
-        red_equalized_image = equalize_grayscale(red_channel)
-        green_equalized_image = equalize_grayscale(green_channel)
-        blue_equalized_image = equalize_grayscale(blue_channel)
-
-        equalized_image = tf.stack([red_equalized_image, green_equalized_image, blue_equalized_image], axis=-1)
-
-    else:
-        equalized_image = equalize_grayscale(image)
-
+    equalized_image = tf.cast(equalized_image, tf.uint8)
     equalized_image = tf.image.convert_image_dtype(equalized_image, orig_dtype)
     return equalized_image
 

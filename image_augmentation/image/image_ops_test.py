@@ -112,7 +112,6 @@ def test_equalize():
 
     show_histogram(image[..., 0])
     plt.title("Histogram of Red Channel of Original Image")
-
     show_histogram(eq_image[..., 0])
     plt.title("Histogram of Red Channel of Equalized Image")
 
@@ -124,6 +123,15 @@ def test_equalize():
     float_image = tf.image.convert_image_dtype(image, tf.float32)
     float_eq_image = equalize(float_image)
     _display_images(float_image, float_eq_image)
+
+    uneq_ex_image = tf.image.decode_jpeg(tf.io.read_file("../../images/test_example_unequalized.jpg"), channels=1)
+    eq_ex_image = equalize(uneq_ex_image)
+    _display_images(uneq_ex_image[..., 0], eq_ex_image[..., 0])
+
+    show_histogram(uneq_ex_image[..., 0])
+    plt.title("Histogram of Original Image")
+    show_histogram(eq_ex_image[..., 0])
+    plt.title("Histogram of Equalized Image")
 
     assert tf.reduce_all(eq_image == pil_eq_image)
 
