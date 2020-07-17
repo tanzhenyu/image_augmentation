@@ -1,3 +1,5 @@
+"""Image processing op(s) for data augmentation."""
+
 import tensorflow as tf
 
 IMAGE_DTYPES = [
@@ -133,6 +135,7 @@ def equalize(image):
     image = tf.cast(image, tf.int32)
 
     def equalize_grayscale(image_channel):
+        """Equalizes the histogram of a grayscale image."""
         current_shape = tf.shape(image_channel)
 
         bins = tf.constant(256, tf.int32)
@@ -221,6 +224,20 @@ def blend(image1, image2, factor):
 
 
 @tf.function
+def sample_pairing(image1, image2, weight):
+    """Alias of `blend`. This is an implementation of SamplePairing
+    as described in "Data Augmentation by Pairing Samples for Images Classification"
+    by Inoue (https://arxiv.org/abs/1801.02929).
+    Args:
+        image1: An int or float tensor of shape `[height, width, num_channels]`.
+        image2: An int or float tensor of shape `[height, width, num_channels]`.
+        factor: A 0-D float tensor with a weight value.
+    """
+    paired_image = blend(image1, image2, weight)
+    return paired_image
+
+
+@tf.function
 def color(image, magnitude):
     tiled_gray_image = tf.image.grayscale_to_rgb(tf.image.rgb_to_grayscale(image))
     colored_image = blend(tiled_gray_image, image, magnitude)
@@ -258,20 +275,6 @@ def sharpness(image, magnitude):
 
     sharpened_image = tf.image.convert_image_dtype(sharpened_image, orig_dtype)
     return sharpened_image
-
-
-@tf.function
-def sample_pairing(image1, image2, weight):
-    """Alias of `blend`. This is an implementation of SamplePairing
-    as described in "Data Augmentation by Pairing Samples for Images Classification"
-    by Inoue (https://arxiv.org/abs/1801.02929).
-    Args:
-        image1: An int or float tensor of shape `[height, width, num_channels]`.
-        image2: An int or float tensor of shape `[height, width, num_channels]`.
-        factor: A 0-D float tensor with a weight value.
-    """
-    paired_image = blend(image1, image2, weight)
-    return paired_image
 
 
 @tf.function

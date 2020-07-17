@@ -1,3 +1,5 @@
+"""Convenience functions for loading curated dataset(s) as pipeline(s)."""
+
 import tensorflow as tf
 import tensorflow_datasets as tfds
 

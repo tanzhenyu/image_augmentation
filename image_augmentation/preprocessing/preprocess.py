@@ -1,3 +1,5 @@
+"""Data preprocessing and baseline augmentation."""
+
 from tensorflow.keras.layers.experimental.preprocessing import Normalization
 from tensorflow.keras.layers.experimental.preprocessing import Rescaling
 from tensorflow.keras.layers.experimental.preprocessing import RandomFlip, RandomCrop

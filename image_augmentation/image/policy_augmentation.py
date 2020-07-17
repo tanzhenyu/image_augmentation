@@ -1,3 +1,5 @@
+"""Apply data augmentation on images using AutoAugment / RandAugment / custom policies."""
+
 import tensorflow as tf
 import tensorflow_addons as tfa
 

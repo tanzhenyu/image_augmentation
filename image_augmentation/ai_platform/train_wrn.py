@@ -1,3 +1,5 @@
+"""Train WideResNet(s) on Google AI platform or locally."""
+
 import argparse
 import logging
 

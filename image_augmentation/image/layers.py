@@ -1,8 +1,10 @@
-from .image_ops import cutout
+"""Pre-processing layers for few image op(s)."""
 
 import tensorflow as tf
 from tensorflow.keras import backend as K
 from tensorflow.keras.layers import Layer
+
+from image_augmentation.image.image_ops import cutout
 
 
 class RandomCutout(Layer):

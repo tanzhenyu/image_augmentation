@@ -1,3 +1,5 @@
+"""WideResNet architecture."""
+
 from tensorflow.keras.layers import Conv2D
 from tensorflow.keras.layers import Activation, BatchNormalization, Add
 from tensorflow.keras.layers import GlobalAveragePooling2D, Dropout, Dense
@@ -16,7 +18,7 @@ _relu = partial(Activation, 'relu')
 
 def _residual_block(input, num_filters=16, k=1,
                     stride=1, dropout=0.0, name='res_block'):
-
+    """Pre-activated residual block."""
     num_filters = num_filters * k
     init = branch = input
 
@@ -47,6 +49,10 @@ def _residual_block(input, num_filters=16, k=1,
 
 def WideResNet(input_shape, depth=28, k=10, dropout=0.0,
                num_classes=10, name=None):
+    """This is an implementation of WideResNet architecture
+    as described in "Wide Residual Networks" by Zagoruyko, Komodakis
+    (https://arxiv.org/abs/1605.07146).
+    """
     if name is None:
         name = 'WideResNet' + '-' + str(depth) + '-' + str(k)
 
