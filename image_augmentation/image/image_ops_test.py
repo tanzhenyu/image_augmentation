@@ -144,7 +144,7 @@ def test_auto_contrast():
 
 
 def test_color():
-    image = tf.image.decode_jpeg(tf.io.read_file("/Users/swg/Desktop/a.jpg"))
+    image = tf.image.decode_jpeg(tf.io.read_file("../../images/test_example.jpg"))
     factor = 0.5
     colored_image = color(image, factor)
 
@@ -155,6 +155,11 @@ def test_color():
 
     _display_images(image, colored_image)
     max_deviation = tf.reduce_max(pil_colored_image - colored_image)
+
+    float_image = tf.image.convert_image_dtype(image, tf.float32)
+    float_colored_image = color(float_image, factor)
+    _display_images(float_image, float_colored_image)
+
     assert tf.reduce_all(max_deviation < 5)
 
 

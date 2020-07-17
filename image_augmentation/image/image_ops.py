@@ -202,7 +202,9 @@ def blend(image1, image2, factor):
     Args:
         image1: An int or float tensor of shape `[height, width, num_channels]`.
         image2: An int or float tensor of shape `[height, width, num_channels]`.
-        factor: A 0-D float tensor with a weight value.
+        factor: A 0-D float tensor with a weight value above 0.0
+    Returns:
+        A tensor with same shape and type as that of `image1` and `image2`.
     """
     _check_image_dtype(image1)
     _check_image_dtype(image2)
@@ -232,7 +234,9 @@ def sample_pairing(image1, image2, weight):
     Args:
         image1: An int or float tensor of shape `[height, width, num_channels]`.
         image2: An int or float tensor of shape `[height, width, num_channels]`.
-        factor: A 0-D float tensor with a weight value.
+        factor: A 0-D float tensor with a weight value above 0.0.
+    Returns:
+        A tensor with same shape and type as that of `image1`.
     """
     paired_image = blend(image1, image2, weight)
     return paired_image
@@ -240,6 +244,15 @@ def sample_pairing(image1, image2, weight):
 
 @tf.function
 def color(image, magnitude):
+    """Adjusts the `magnitude` of color of an `image`.
+    Args:
+        image: An int or float tensor of shape `[height, width, num_channels]`.
+        magnitude: A 0-D float tensor with single value above 0.0.
+    Returns:
+        A tensor with same shape and type as that of `image`.
+    """
+    _check_image_dtype(image)
+
     tiled_gray_image = tf.image.grayscale_to_rgb(tf.image.rgb_to_grayscale(image))
     colored_image = blend(tiled_gray_image, image, magnitude)
     return colored_image
@@ -280,6 +293,8 @@ def sharpness(image, magnitude):
 
 @tf.function
 def brightness(image, magnitude):
+    _check_image_dtype(image)
+
     dark = tf.zeros_like(image)
     bright_image = blend(dark, image, magnitude)
     return bright_image
