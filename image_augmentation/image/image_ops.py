@@ -166,6 +166,14 @@ def equalize(image):
 
 @tf.function
 def auto_contrast(image):
+    """Normalizes image contrast by remapping the image histogram such
+    that the brightest pixel becomes 1.0 (float) / 255 (unsigned int) and
+    darkest pixel becomes 0.
+    Args:
+        image: An int or float tensor of shape `[height, width, num_channels]`.
+    Returns:
+        A tensor with same shape and type as that of `image`.
+    """
     _check_image_dtype(image)
 
     orig_dtype = image.dtype
@@ -173,12 +181,8 @@ def auto_contrast(image):
 
     min_val, max_val = tf.reduce_min(image, axis=[0, 1]), tf.reduce_max(image, axis=[0, 1])
 
-    bright = tf.constant(255., tf.float32)
-
     norm_image = (image - min_val) / (max_val - min_val)
-    norm_image = norm_image * bright
-
-    norm_image = tf.image.convert_image_dtype(norm_image, orig_dtype)
+    norm_image = tf.image.convert_image_dtype(norm_image, orig_dtype, saturate=True)
     return norm_image
 
 

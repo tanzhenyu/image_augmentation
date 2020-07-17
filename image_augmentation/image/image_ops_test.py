@@ -132,6 +132,10 @@ def test_auto_contrast():
     pil_ac_image = np.array(ImageOps.autocontrast(pil_image))
 
     _display_images(image, ac_image)
+
+    float_image = tf.image.convert_image_dtype(image, tf.float32)
+    float_ac_image = auto_contrast(float_image)
+    _display_images(float_image, float_ac_image)
     assert tf.reduce_all(ac_image == pil_ac_image)
 
 
@@ -191,7 +195,7 @@ def test_sample_pairing():
 
     float_image1 = tf.image.convert_image_dtype(image1, tf.float32)
     float_image2 = tf.image.convert_image_dtype(image2, tf.float32)
-    paired_image = sample_pairing(image1, image2, 0.5)
+    paired_image = sample_pairing(float_image1, float_image2, 0.5)
 
     plt.figure()
     plt.imshow(paired_image.numpy())
