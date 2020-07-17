@@ -297,6 +297,13 @@ def sharpness(image, magnitude):
 
 @tf.function
 def brightness(image, magnitude):
+    """Adjusts the `magnitude` of brightness of an `image`.
+    Args:
+        image: An int or float tensor of shape `[height, width, num_channels]`.
+        magnitude: A 0-D float tensor with single value above 0.0.
+    Returns:
+        A tensor with same shape and type as that of `image`.
+    """
     _check_image_dtype(image)
 
     dark = tf.zeros_like(image)

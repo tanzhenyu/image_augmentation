@@ -235,6 +235,11 @@ def test_brightness():
     )
 
     _display_images(image, bright_image)
+
+    float_image = tf.image.convert_image_dtype(image, tf.float32)
+    float_bright_image = brightness(float_image, factor)
+    _display_images(float_image, float_bright_image)
+
     max_deviation = tf.reduce_max(pil_bright_image - bright_image)
     assert tf.reduce_all(max_deviation < 1)
 
