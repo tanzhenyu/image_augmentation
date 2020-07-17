@@ -23,11 +23,11 @@ def read_image(path):
     return image
 
 
-images = tf.map_fn(read_image, image_paths_ss, dtype=tf.uint8)
+original_images = tf.map_fn(read_image, image_paths_ss, dtype=tf.uint8)
 policy = autoaugment_policy()
 augmenter = PolicyAugmentation(policy)
 
-augmented_images = augmenter(images)
+augmented_images = augmenter(original_images)
 
 
 def show_images(images):
@@ -39,7 +39,7 @@ def show_images(images):
     plt.tight_layout(0.5, rect=(0, 0, 1, 0.95))
 
 
-show_images(images)
+show_images(original_images)
 plt.suptitle("Original Images")
 
 show_images(augmented_images)

@@ -12,8 +12,10 @@ def _check_image_dtype(image):
 @tf.function
 def invert(image):
     """Inverts the pixels of an `image`.
+
     Args:
         image: An int or float tensor of shape `[height, width, num_channels]`.
+
     Returns:
         A tensor with same shape and type as that of `image`.
     """
@@ -32,12 +34,14 @@ def cutout(image, size=16, color=None):
     DeVries & Taylor (https://arxiv.org/abs/1708.04552).
     It applies a random square patch of specified `size` over an `image`
     and by replacing those pixels with value of `color`.
+
     Args:
         image: An int or float tensor of shape `[height, width, num_channels]`.
         size: A 0-D int tensor with value that should be divisible by 2.
         color: A single pixel value (grayscale) or tuple of 3 values (RGB),
             in case a single value is used for RGB image the value is tiled.
             Gray color (128) is used by default.
+
     Returns:
         A tensor with same shape and type as that of `image`.
     """
@@ -79,9 +83,11 @@ def cutout(image, size=16, color=None):
 @tf.function
 def solarize(image, threshold):
     """Inverts the pixels of an `image` above a certain `threshold`.
+
     Args:
         image: An int or float tensor of shape `[height, width, num_channels]`.
         threshold: A 0-D tensor with single value.
+
     Returns:
         A tensor with same shape and type as that of `image`.
     """
@@ -98,9 +104,11 @@ def solarize(image, threshold):
 def posterize(image, num_bits):
     """Reduces the number of bits used to represent an `image`
     for each color channel.
+
     Args:
         image: An int or float tensor of shape `[height, width, num_channels]`.
         num_bits: A 0-D int tensor with single value.
+
     Returns:
         A tensor with same shape and type as that of `image`.
     """
@@ -122,8 +130,10 @@ def posterize(image, num_bits):
 def equalize(image):
     """Equalizes the `image` histogram. In case of an RGB image, equalization
     individually for each channel.
+
     Args:
         image: An int or float tensor of shape `[height, width, num_channels]`.
+
     Returns:
         A tensor with same shape and type as that of `image`.
     """
@@ -170,8 +180,10 @@ def auto_contrast(image):
     """Normalizes `image` contrast by remapping the `image` histogram such
     that the brightest pixel becomes 1.0 (float) / 255 (unsigned int) and
     darkest pixel becomes 0.
+
     Args:
         image: An int or float tensor of shape `[height, width, num_channels]`.
+
     Returns:
         A tensor with same shape and type as that of `image`.
     """
@@ -190,10 +202,12 @@ def auto_contrast(image):
 @tf.function
 def blend(image1, image2, factor):
     """Blends an image with another using `factor`.
+
     Args:
         image1: An int or float tensor of shape `[height, width, num_channels]`.
         image2: An int or float tensor of shape `[height, width, num_channels]`.
         factor: A 0-D float tensor with a weight value above 0.0
+
     Returns:
         A tensor with same shape and type as that of `image1` and `image2`.
     """
@@ -221,10 +235,12 @@ def sample_pairing(image1, image2, weight):
     """Alias of `blend`. This is an implementation of SamplePairing
     as described in "Data Augmentation by Pairing Samples for Images Classification"
     by Inoue (https://arxiv.org/abs/1801.02929).
+
     Args:
         image1: An int or float tensor of shape `[height, width, num_channels]`.
         image2: An int or float tensor of shape `[height, width, num_channels]`.
         factor: A 0-D float tensor with a weight value above 0.0.
+
     Returns:
         A tensor with same shape and type as that of `image1`.
     """
@@ -235,9 +251,11 @@ def sample_pairing(image1, image2, weight):
 @tf.function
 def color(image, magnitude):
     """Adjusts the `magnitude` of color of an `image`.
+
     Args:
         image: An int or float tensor of shape `[height, width, num_channels]`.
         magnitude: A 0-D float tensor with single value above 0.0.
+
     Returns:
         A tensor with same shape and type as that of `image`.
     """
@@ -251,9 +269,11 @@ def color(image, magnitude):
 @tf.function
 def sharpness(image, magnitude):
     """Adjusts the `magnitude` of sharpness of an `image`.
+
     Args:
         image: An int or float tensor of shape `[height, width, num_channels]`.
         magnitude: A 0-D float tensor with single value above 0.0.
+
     Returns:
         A tensor with same shape and type as that of `image`.
     """
@@ -295,9 +315,11 @@ def sharpness(image, magnitude):
 @tf.function
 def brightness(image, magnitude):
     """Adjusts the `magnitude` of brightness of an `image`.
+
     Args:
         image: An int or float tensor of shape `[height, width, num_channels]`.
         magnitude: A 0-D float tensor with single value above 0.0.
+
     Returns:
         A tensor with same shape and type as that of `image`.
     """
@@ -311,9 +333,11 @@ def brightness(image, magnitude):
 @tf.function
 def contrast(image, magnitude):
     """Adjusts the `magnitude` of contrast of an `image`.
+
     Args:
         image: An int or float tensor of shape `[height, width, num_channels]`.
         magnitude: A 0-D float tensor with single value above 0.0.
+
     Returns:
         A tensor with same shape and type as that of `image`.
     """

@@ -28,6 +28,13 @@ TRANSFORMS = {
 
 
 def some_test_policy():
+    """Policy with 4 random data augmentation op(s), to
+    be used for testing purpose only.
+
+    Returns:
+        A nested list of tuples eg. [[('op_name', probability, level),
+            ('op_name', probability, level)], ...]
+    """
     policy = [
         [('Cutout', 0.7, 4), ('Invert', 0.3, 10)],
         [('Posterize', 0.6, 10), ('Brightness', 0.3, 2)]
@@ -36,6 +43,19 @@ def some_test_policy():
 
 
 def autoaugment_policy(dataset='reduced_imagenet'):
+    """Data augmentation policy as described in "AutoAugment: Learning
+    Augmentation Policies from Data" by Cubuk, Zoph et al.
+    (https://arxiv.org/abs/1805.09501) found on popular image classification
+    datasets.
+
+    Args:
+        dataset: a string containing any of the following 'reduced_cifar10',
+            'reduced_svhn' or 'reduced_imagenet'.
+
+    Returns:
+        A nested list of tuples eg. [[('op_name', probability, level),
+            ('op_name', probability, level)], ...].
+    """
     policies = {
         "reduced_cifar10": [
             [('Invert', 0.1, 7), ('Contrast', 0.2, 6)],
@@ -124,6 +144,19 @@ def autoaugment_policy(dataset='reduced_imagenet'):
 
 
 def levels_to_args(translate_max_loc=150, rotate_max_deg=30, cutout_max_size=60):
+    """Converts levels in augmentation policy to specific magnitude
+    for applying with image op(s). Note: Some image op(s) do not use
+    magnitude values are for them value of level can be ignored.
+
+    Args:
+        translate_max_loc: int hyperparameter.
+        rotate_max_deg: int hyperparameter.
+        cutout_max_size: int hyperparameter.
+
+    Returns:
+        dictionary of op names and a convenience function for
+            applying them using subpolicy levels.
+    """
     # shear will have range [-0.3, 0.3] by applying random negation
     shear_min_arg, shear_max_arg = 0.0, 0.3
     # translate will have range [-0.3, 0.3] by applying random negation
@@ -219,6 +252,7 @@ def levels_to_args(translate_max_loc=150, rotate_max_deg=30, cutout_max_size=60)
 
 
 def apply_subpolicy(image, subpolicy, args):
+    """Applies a specific subpolicy on an image."""
     def apply_operation(image_, op_name_, level_):
         return TRANSFORMS[op_name_](image_, *args[op_name_](level_))
 
@@ -232,13 +266,34 @@ def apply_subpolicy(image, subpolicy, args):
 
 
 def randomly_select_subpolicy(policy):
+    """Randomly select a single subpolicy from complete policy."""
     n_subpolicies = len(policy)
     random_selection = tf.random.uniform([], 0, n_subpolicies, tf.int32)
     return policy[random_selection]
 
 
 class PolicyAugmentation:
+    """Apply data augmentation on images using a data augmentation policy.
+    The data augmentation policy must be either an AutoAugment (https://arxiv.org/abs/1805.09501),
+    RandAugment (https://arxiv.org/abs/1909.13719) or a custom policy. AutoAugment policies can
+    be obtained using `autoaugment_policy(dataset)`.
+
+    Returns:
+        A 1-arg callable that can be used to augment a batch of images
+            or a single image.
+    """
+
     def __init__(self, policy, translate_max=150, rotate_max_degree=30, cutout_max_size=60, seed=None):
+        """Applies data augmentation on image(s) using a `policy`.
+
+        Args:
+            policy: A nested list of tuples of form [[('op_name', probability, level),
+                ('op_name', probability, level)], ...]
+            translate_max: Ant int value.
+            rotate_max_degree: An int value in the range [0, 360].
+            cutout_max_size: An int value that is divisible by 2.
+            seed: An int value for deterministic results.
+        """
         self.translate_max = translate_max
         self.rotate_max_degree = rotate_max_degree
         self.cutout_max_size = cutout_max_size
@@ -249,6 +304,15 @@ class PolicyAugmentation:
             tf.random.set_seed(seed)
 
     def apply(self, images):
+        """Applies augmentation on a batch of images or on a single image.
+
+        Args:
+            images: An int or float tensor of shape `[height, width, num_channels]` or
+                `[num_images, height, width, num_channels]`.
+
+        Returns:
+             A tensor with same shape and type as that of `images`.
+        """
         images = tf.convert_to_tensor(images)
         is_image_batch = tf.rank(images) == 4
 
@@ -263,4 +327,5 @@ class PolicyAugmentation:
         return augmented_images
 
     def __call__(self, images):
+        """Alias of `apply` method."""
         return self.apply(images)
