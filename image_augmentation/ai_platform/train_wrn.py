@@ -119,6 +119,12 @@ def get_args():
         type=float,
         help='weight decay of training step, default=10e-4')
     parser.add_argument(
+        '--l2-reg',
+        default=0.0,
+        type=float,
+        help='L2 regularization to be applied on weights of conv '
+             'and dense layers, off by default')
+    parser.add_argument(
         '--verbosity',
         choices=['DEBUG', 'ERROR', 'FATAL', 'INFO', 'WARN'],
         default='INFO')
@@ -268,12 +274,19 @@ def main(args):
         if args.weight_decay == 0:
             opt = keras.optimizers.SGD(lr, momentum=0.9, nesterov=args.sgd_nesterov)
         else:
-            opt = tfa.optimizers.SGDW(args.weight_decay, lr, momentum=0.9, nesterov=args.sgd_nesterov)
+            opt = tfa.optimizers.SGDW(args.weight_decat, lr, momentum=0.9, nesterov=args.sgd_nesterov)
     else:  # adam
         if args.weight_decay == 0:
             opt = keras.optimizers.Adam(lr)
         else:
             opt = tfa.optimizers.AdamW(args.weight_decay, lr)
+
+    # use L2 regularization for weight decaying
+    if args.l2_reg != 0:
+        l2 = keras.regularizers.L2(args.l2_reg)
+        for var in model.trainable_variables:
+            if 'kernel' in var.name:
+                model.add_loss(lambda: l2(var))
 
     metrics = [keras.metrics.SparseCategoricalAccuracy()]
     # use top-5 accuracy metric with ImageNet and reduced-ImageNet only
