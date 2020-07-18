@@ -28,7 +28,7 @@ These op(s) internally make use of `tfa.image.transform` which is implemented us
 # Image Data Augmentation
 
 AutoAugment uses an augmentation policy consisting of multiple sub-policies.
-Each subpolicy has two image operations associated with a probability and magnitude of effect (some image operations like `AutoContrast`, `Invert`, `Equalize` do not have any effect of `magnitude` parameter).
+Each subpolicy has two image operations associated with a `probability` and `magnitude` of effect (some image operations like `AutoContrast`, `Invert`, `Equalize` do not have any effect of `magnitude` parameter).
 For any particular image of the training set, we apply a subpolicy chosen randomly from the AutoAugment policy.
 The corresponding image op(s) from the selected subpolicy are then applied on the image basis their individual probabilities.
 
