@@ -16,13 +16,14 @@ class RandomCutout(Layer):
         super(RandomCutout, self).__init__(name=name, **kwargs)
 
     def call(self, inputs, training=True):
-        if training is None:
-            training = K.learning_phase()
+        with tf.name_scope(self.name or "RandomCutout"):
+            if training is None:
+                training = K.learning_phase()
 
-        if training:
-            return tf.map_fn(lambda x: cutout(x, self.size), inputs)
-        else:
-            return inputs
+            if training:
+                return tf.map_fn(lambda x: cutout(x, self.size), inputs)
+            else:
+                return inputs
 
     def compute_output_shape(self, input_shape):
         return input_shape
