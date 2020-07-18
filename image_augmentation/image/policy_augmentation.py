@@ -29,7 +29,7 @@ TRANSFORMS = {
 
 def some_test_policy():
     """Policy with 4 random data augmentation op(s), to
-    be used for testing purpose only.
+    be used for testing purposes only.
 
     Returns:
         An augmentation policy which is a nested list of tuples eg.
@@ -213,6 +213,7 @@ def levels_to_args(translate_max_loc=150, rotate_max_deg=30, cutout_max_size=60)
 
     def _no_args(_):
         return ()
+    # auto_contrast, invert, equalize uses no args
     auto_contrast_args = invert_args = equalize_args = _no_args
 
     def solarize_args(level):
@@ -228,6 +229,7 @@ def levels_to_args(translate_max_loc=150, rotate_max_deg=30, cutout_max_size=60)
     def _blend_args(level):
         magnitude = param(level, blend_min_arg, blend_max_arg)
         return magnitude,
+    # contrast, color, brightness, sharpness uses the same args
     contrast_args = color_args = brightness_args = sharpness_args = _blend_args
 
     def cutout_args(level):
@@ -260,6 +262,7 @@ def apply_subpolicy(image, subpolicy, args):
     def apply_operation(image_, op_name_, level_):
         return TRANSFORMS[op_name_](image_, *args[op_name_](level_))
 
+    # iterates each op in the subpolicy and applies on the image (if probable)
     for op_name, prob, level in subpolicy:
         random_draw = tf.random.uniform([])
         should_apply_op = tf.floor(random_draw + tf.cast(prob, tf.float32))
@@ -292,7 +295,7 @@ class PolicyAugmentation:
 
         Args:
             policy: A nested list of tuples of form [[('op_name', probability, level),
-                ('op_name', probability, level)], ...].
+                ('op_name', probability, level)], ...]. Note: The maximum level is `10`.
             translate_max: An int hyperparameter that is used to determine the
                 allowed maximum number of pixels for translation. Default is `150`.
             rotate_max_degree: An int hyperparameter in the range [0, 360] to determine
@@ -325,10 +328,12 @@ class PolicyAugmentation:
         is_image_batch = tf.rank(images) == 4
 
         def apply_on_image(image):
+            """Applies data augmentation on a single image."""
             subpolicy = randomly_select_subpolicy(self.policy)
             augmented_image = apply_subpolicy(image, subpolicy, self.args_level)
             return augmented_image
 
+        # if batch, use map_fn and then apply, else apply directly
         augmented_images = tf.cond(is_image_batch,
                                    lambda: tf.map_fn(apply_on_image, images),
                                    lambda: apply_on_image(images))
