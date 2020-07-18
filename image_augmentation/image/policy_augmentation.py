@@ -151,11 +151,11 @@ def levels_to_args(translate_max_loc=150, rotate_max_deg=30, cutout_max_size=60)
 
     Args:
         translate_max_loc: An int hyperparameter that is used to determine the
-            allowed maximum number of pixels for translation.
-        rotate_max_deg: An int hyperparameter in the range [0, 360] to determine
-            the allowed maximum degree of rotation.
-        cutout_max_size: An int hyperparameter to determine the allowed maximum
-            size of square patch for cutout.
+            allowed maximum number of pixels for translation. Default is `150`.
+        rotate_max_deg: An int hyperparameter in the range `[0, 360]` to determine
+            the allowed maximum degree of rotation. Default is `130`.
+        cutout_max_size: An int hyperparameter to determine the allowed maximum size
+            of square patch for cutout (should be divisible by 2). Default is `60`.
 
     Returns:
         dictionary of op names and a convenience function for
@@ -298,7 +298,7 @@ class PolicyAugmentation:
             rotate_max_degree: An int hyperparameter in the range [0, 360] to determine
                 the allowed maximum degree of rotation. Default is `30`.
             cutout_max_size: An int hyperparameter to determine the allowed maximum
-                size of square patch for cutout. Default is `60`.
+                size of square patch for cutout (should be divisible by 2). Default is `60`.
             seed: An int value for setting seed to ensure deterministic results.
                 Default is `None`.
         """
