@@ -32,8 +32,8 @@ def some_test_policy():
     be used for testing purpose only.
 
     Returns:
-        A nested list of tuples eg. [[('op_name', probability, level),
-            ('op_name', probability, level)], ...]
+        An augmentation policy which is a nested list of tuples eg.
+            [[('op_name', probability, level), ('op_name', probability, level)], ...]
     """
     policy = [
         [('Cutout', 0.7, 4), ('Invert', 0.3, 10)],
@@ -53,8 +53,9 @@ def autoaugment_policy(dataset='reduced_imagenet'):
             'reduced_svhn' or 'reduced_imagenet'.
 
     Returns:
-        A nested list of tuples eg. [[('op_name', probability, level),
-            ('op_name', probability, level)], ...].
+        An AutoAugment policy which is a nested list of tuples eg.
+            [[('op_name', probability, level), ('op_name', probability, level)],
+            ...].
     """
     policies = {
         "reduced_cifar10": [
@@ -149,9 +150,12 @@ def levels_to_args(translate_max_loc=150, rotate_max_deg=30, cutout_max_size=60)
     magnitude values are for them value of level can be ignored.
 
     Args:
-        translate_max_loc: int hyperparameter.
-        rotate_max_deg: int hyperparameter.
-        cutout_max_size: int hyperparameter.
+        translate_max_loc: An int hyperparameter that is used to determine the
+            allowed maximum number of pixels for translation.
+        rotate_max_deg: An int hyperparameter in the range [0, 360] to determine
+            the allowed maximum degree of rotation.
+        cutout_max_size: An int hyperparameter to determine the allowed maximum
+            size of square patch for cutout.
 
     Returns:
         dictionary of op names and a convenience function for
@@ -288,11 +292,15 @@ class PolicyAugmentation:
 
         Args:
             policy: A nested list of tuples of form [[('op_name', probability, level),
-                ('op_name', probability, level)], ...]
-            translate_max: Ant int value.
-            rotate_max_degree: An int value in the range [0, 360].
-            cutout_max_size: An int value that is divisible by 2.
-            seed: An int value for deterministic results.
+                ('op_name', probability, level)], ...].
+            translate_max: An int hyperparameter that is used to determine the
+                allowed maximum number of pixels for translation. Default is `150`.
+            rotate_max_degree: An int hyperparameter in the range [0, 360] to determine
+                the allowed maximum degree of rotation. Default is `30`.
+            cutout_max_size: An int hyperparameter to determine the allowed maximum
+                size of square patch for cutout. Default is `60`.
+            seed: An int value for setting seed to ensure deterministic results.
+                Default is `None`.
         """
         self.translate_max = translate_max
         self.rotate_max_degree = rotate_max_degree
@@ -304,7 +312,7 @@ class PolicyAugmentation:
             tf.random.set_seed(seed)
 
     def apply(self, images):
-        """Applies augmentation on a batch of images or on a single image.
+        """Applies augmentation on a batch of `images` or on a single image.
 
         Args:
             images: An int or float tensor of shape `[height, width, num_channels]` or
@@ -327,5 +335,5 @@ class PolicyAugmentation:
         return augmented_images
 
     def __call__(self, images):
-        """Alias of `apply` method."""
+        """Calls self as a function. Alias of `apply` method."""
         return self.apply(images)
