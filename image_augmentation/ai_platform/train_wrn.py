@@ -274,7 +274,7 @@ def main(args):
         if args.weight_decay == 0:
             opt = keras.optimizers.SGD(lr, momentum=0.9, nesterov=args.sgd_nesterov)
         else:
-            opt = tfa.optimizers.SGDW(args.weight_decat, lr, momentum=0.9, nesterov=args.sgd_nesterov)
+            opt = tfa.optimizers.SGDW(args.weight_decay, lr, momentum=0.9, nesterov=args.sgd_nesterov)
     else:  # adam
         if args.weight_decay == 0:
             opt = keras.optimizers.Adam(lr)
