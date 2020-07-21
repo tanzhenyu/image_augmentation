@@ -115,9 +115,9 @@ def get_args():
         help='use Nesterov accelerated gradient with SGD optimizer, by default Nesterov is off')
     parser.add_argument(
         '--weight-decay',
-        default=10e-4,
+        default=0.0,
         type=float,
-        help='weight decay of training step, default=10e-4')
+        help='weight decay of training step, default=0.0, off')
     parser.add_argument(
         '--l2-reg',
         default=0.0,
@@ -202,9 +202,7 @@ def main(args):
             plt.savefig(fig_file, format="pdf")
         print("Wrote file to", fig_file_path)
 
-    wrn = WideResNet(inp_shape, depth=args.wrn_depth,
-                     k=args.wrn_k, dropout=args.wrn_dropout,
-                     l2_reg=args.l2_reg, num_classes=num_classes)
+    wrn = WideResNet(inp_shape, depth=args.wrn_depth, k=args.wrn_k, dropout=args.wrn_dropout, num_classes=num_classes)
     wrn.summary()
 
     inp = keras.layers.Input(inp_shape, name='image_input')
@@ -282,6 +280,13 @@ def main(args):
             opt = keras.optimizers.Adam(lr)
         else:
             opt = tfa.optimizers.AdamW(args.weight_decay, lr)
+
+    # use L2 regularization for weight decaying
+    if args.l2_reg != 0:
+        l2 = keras.regularizers.L2(args.l2_reg)
+        for var in model.trainable_variables:
+            if 'kernel' in var.name:
+                model.add_loss(lambda: l2(var))
 
     metrics = [keras.metrics.SparseCategoricalAccuracy()]
     # use top-5 accuracy metric with ImageNet and reduced-ImageNet only
