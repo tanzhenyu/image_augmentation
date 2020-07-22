@@ -115,9 +115,9 @@ def get_args():
         help='use Nesterov accelerated gradient with SGD optimizer, by default Nesterov is off')
     parser.add_argument(
         '--weight-decay',
-        default=10e-4,
+        default=0.0,
         type=float,
-        help='weight decay of training step, default=10e-4')
+        help='weight decay of training step, default=0.0, off')
     parser.add_argument(
         '--l2-reg',
         default=0.0,
