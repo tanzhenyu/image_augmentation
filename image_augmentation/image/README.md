@@ -89,8 +89,8 @@ augmented_images = augmenter(images)
 show_images(augmented_images) # show augmented images
 ```
 
-![Original Images](../../images/tf-flowers_images.png)
-![Augmented Images](../../images/tf-flowers_augmented_images.png)
+![Original Images](../../example_images/tf-flowers_images.png)
+![Augmented Images](../../example_images/tf-flowers_augmented_images.png)
 
 **Example 2**: Applying AutoAugment on a TFDS pipeline
 
@@ -104,27 +104,27 @@ ds = tfds.load('cifar10', split='train', as_supervised=True)
 
 # use AutoAugment policy for CIFAR-10
 cifar10_policy = autoaugment_policy("reduced_cifar10")
-augmenter = PolicyAugmentation(cifar10_policy, translate_max=16, cutout_max_size=16) # set hyper params for 32x32 images
+augmenter = PolicyAugmentation(cifar10_policy, translate_max=16, cutout_max_size=16) example_images
 
-# take a subset of 20 images only
+example_images
 subset_size = 20
 ds = ds.take(subset_size)
 
 original_images = [image for image in ds]
-show_images(original_images) # show original images
+show_images(original_images) example_images
 
 def map_fn(image, label):
     augmented_image = tf.py_function(augmenter, [image], image.dtype)
     return augmented_image, label
-# apply augmentation on the images
+example_images
 aug_ds = ds.map(map_fn, tf.data.experimental.AUTOTUNE)
 
 augmented_images = [image for image, label in aug_ds]
-show_images(augmented_images) # show augmented images
+show_images(augmented_images) example_images
 ```
 
-![Original Images](../../images/cifar10_images.png)
-![Augmented Images](../../images/cifar10_augmented_images.png)
+![Original Images](../../example_images/cifar10_images.png)
+![Augmented Images](../../example_images/cifar10_augmented_images.png)
 
 **Example 3**: Applying AutoAugment on a batch of images
 
@@ -155,8 +155,8 @@ augmented_images = augmenter(images)
 show_images(augmented_images) # show augmented images
 ```
 
-![Original Images](../../images/svhn_images.png)
-![Augmented Images](../../images/svhn_augmented_images.png)
+![Original Images](../../example_images/svhn_images.png)
+![Augmented Images](../../example_images/svhn_augmented_images.png)
 
 **Example 4**: Using `PolicyAugmentation` with a custom data augmentation policy
 
@@ -195,5 +195,5 @@ augmented_images = augmenter(images)
 show_images(augmented_images) # show augmented images
 ```
 
-![Original Images](../../images/tf-flowers_images1.png)
-![Augmented Images](../../images/tf-flowers_augmented_images1.png)
+![Original Images](../../example_images/tf-flowers_images1.png)
+![Augmented Images](../../example_images/tf-flowers_augmented_images1.png)

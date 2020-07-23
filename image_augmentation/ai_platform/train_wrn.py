@@ -213,7 +213,7 @@ def main(args):
     else:
         x = baseline_augment(inp)
 
-    # mean normalization of CIFAR10, SVHN require that images be supplied
+    # mean normalization of CIFAR10, SVHN require that example_images be supplied
     if args.dataset.endswith("cifar10") or args.dataset.endswith("svhn"):
         images_only = train_ds.map(lambda image, label: image)
         x = standardize(x, images_only)

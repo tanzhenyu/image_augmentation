@@ -220,7 +220,7 @@ def blend(image1, image2, factor, name=None):
         image1: An int or float tensor of shape `[height, width, num_channels]`.
         image2: An int or float tensor of shape `[height, width, num_channels]`.
         factor: A 0-D float tensor or single floating point value depicting
-            a weight above 0.0 for combining the images.
+            a weight above 0.0 for combining the example_images.
         name: An optional string for name of the operation.
 
     Returns:
@@ -257,7 +257,7 @@ def sample_pairing(image1, image2, weight, name=None):
         image1: An int or float tensor of shape `[height, width, num_channels]`.
         image2: An int or float tensor of shape `[height, width, num_channels]`.
         weight: A 0-D float tensor or single floating point value depicting
-            a weight factor above 0.0 for combining the images.
+            a weight factor above 0.0 for combining the example_images.
         name: An optional string for name of the operation.
 
     Returns:
