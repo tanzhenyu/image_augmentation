@@ -189,7 +189,7 @@ def levels_to_args(translate_max_loc=150, rotate_max_deg=30, cutout_max_size=60)
         level = param(level, shear_min_arg, shear_max_arg)
         level = randomly_negate(level)
         replace = gray_color
-        return level, replace
+        return tf.constant(level), tf.constant(replace)
     shear_x_args = shear_y_args = _shear_args
 
     def _translate_args(level, is_x):
@@ -202,14 +202,14 @@ def levels_to_args(translate_max_loc=150, rotate_max_deg=30, cutout_max_size=60)
             translate_to = [round(level), 0]
         else:
             translate_to = [0, round(level)]
-        return translate_to, replace
+        return tf.constant(translate_to), tf.constant(replace)
     translate_x_args = lambda level: _translate_args(level, is_x=True)
     translate_y_args = lambda level: _translate_args(level, is_x=False)
 
     def rotate_args(level):
         angle = param(level, rotate_min_arg, rotate_max_arg)
         angle = randomly_negate(angle)
-        return angle,
+        return tf.constant(angle),
 
     def _no_args(_):
         return ()
@@ -219,16 +219,16 @@ def levels_to_args(translate_max_loc=150, rotate_max_deg=30, cutout_max_size=60)
     def solarize_args(level):
         threshold = param(level, solarize_min_arg, solarize_max_arg)
         threshold = round(threshold)
-        return threshold,
+        return tf.constant(threshold),
 
     def posterize_args(level):
         num_bits = param(level, posterize_min_arg, posterize_max_arg)
         num_bits = round(num_bits)
-        return num_bits,
+        return tf.constant(num_bits),
 
     def _blend_args(level):
         magnitude = param(level, blend_min_arg, blend_max_arg)
-        return magnitude,
+        return tf.constant(magnitude),
     # contrast, color, brightness, sharpness uses the same args
     contrast_args = color_args = brightness_args = sharpness_args = _blend_args
 
@@ -236,7 +236,7 @@ def levels_to_args(translate_max_loc=150, rotate_max_deg=30, cutout_max_size=60)
         size = param(level, cutout_min_arg, cutout_max_arg)
         size = round(size)
         size = size + 1 if size % 2 != 0 else size
-        return size,
+        return tf.constant(size),
 
     return {
         "ShearX": shear_x_args,
