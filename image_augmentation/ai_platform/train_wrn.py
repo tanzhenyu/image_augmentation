@@ -203,8 +203,7 @@ def main(args):
         print("Wrote file to", fig_file_path)
 
     wrn = WideResNet(inp_shape, depth=args.wrn_depth, k=args.wrn_k,
-                     l2_reg=args.l2_reg, dropout=args.wrn_dropout,
-                     num_classes=num_classes)
+                     dropout=args.wrn_dropout, num_classes=num_classes)
     wrn.summary()
 
     inp = keras.layers.Input(inp_shape, name='image_input')
@@ -287,6 +286,10 @@ def main(args):
     # use top-5 accuracy metric with ImageNet and reduced-ImageNet only
     if args.dataset.endswith("imagenet"):
         metrics.append(keras.metrics.SparseTopKCategoricalAccuracy(k=5))
+
+    if args.l2_reg != 0:
+        for var in model.trainable_variables:
+            model.add_loss(lambda: keras.regularizers.L2(args.lr_reg)(var))
 
     model.compile(opt, loss='sparse_categorical_crossentropy', metrics=metrics)
 
