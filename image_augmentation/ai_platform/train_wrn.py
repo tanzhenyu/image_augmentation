@@ -289,7 +289,7 @@ def main(args):
 
     if args.l2_reg != 0:
         for var in model.trainable_variables:
-            model.add_loss(lambda: keras.regularizers.L2(args.lr_reg)(var))
+            model.add_loss(lambda: keras.regularizers.L2(args.l2_reg)(var))
 
     model.compile(opt, loss='sparse_categorical_crossentropy', metrics=metrics)
 
