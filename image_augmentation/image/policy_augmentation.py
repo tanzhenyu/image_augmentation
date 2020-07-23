@@ -8,11 +8,20 @@ from image_augmentation.image import contrast, color, brightness, sharpness, cut
 
 MAX_LEVEL = 10
 
+
+def convenient_type(tfa_image_fn):
+    """Convenience function to cast `replace` argument to match image dtype.
+    Required for `tfa.image.translate_xy`, `tfa.image.shear_x`, `tfa.image.shear_y`
+    function calls.
+    """
+    return lambda image, level, replace: tfa_image_fn(image, level, tf.cast(replace, image.dtype))
+
+
 TRANSFORMS = {
-    "ShearX": tfa.image.shear_x,
-    "ShearY": tfa.image.shear_y,
-    "TranslateX": tfa.image.translate_xy,
-    "TranslateY": tfa.image.translate_xy,
+    "ShearX": convenient_type(tfa.image.shear_x),
+    "ShearY": convenient_type(tfa.image.shear_y),
+    "TranslateX": convenient_type(tfa.image.translate_xy),
+    "TranslateY": convenient_type(tfa.image.translate_xy),
     "Rotate": tfa.image.rotate,
     "AutoContrast": auto_contrast,
     "Invert": invert,
