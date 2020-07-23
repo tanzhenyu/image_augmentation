@@ -358,3 +358,51 @@ class PolicyAugmentation:
     def __call__(self, images):
         """Calls self as a function. Alias of `apply` method."""
         return self.apply(images)
+
+
+def apply_randaugment(image, num_layers, magnitude, args):
+    """Applies RandAugment on a single image with given value of `M` and `N`."""
+    def apply_operation(image_, op_name_, level_):
+        return TRANSFORMS[op_name_](image_, *args[op_name_](level_))
+    op_names = list(TRANSFORMS.keys())
+
+    # select and apply random op(s) on the image sequentially for `num_layers` number of times
+    for _ in tf.range(num_layers):
+        op_idx = tf.random.uniform([], 0, len(op_names), dtype=tf.int32)
+        op_name = op_names[op_idx]
+        image = apply_operation(image, op_name, magnitude)
+    return image
+
+
+class RandAugment:
+    def __init__(self, magnitude, num_layers, translate_max=150, rotate_max_degree=30, cutout_max_size=60, seed=None):
+        self.magnitude = magnitude
+        self.num_layers = num_layers
+
+        self.translate_max = translate_max
+        self.rotate_max_degree = rotate_max_degree
+        self.cutout_max_size = cutout_max_size
+
+        max_level = 30  # RandAugment paper suggests max value as 30
+        self.args_level = levels_to_args(max_level, self.translate_max,
+                                         self.rotate_max_degree, self.cutout_max_size)
+
+        if seed is not None:
+            tf.random.set_seed(seed)
+
+    def apply(self, images):
+        images = tf.convert_to_tensor(images)
+        is_image_batch = tf.rank(images) == 4
+
+        def apply_on_image(image):
+            return apply_randaugment(image, self.num_layers, self.magnitude, self.args_level)
+
+        # if batch, use map_fn and then apply, else apply directly
+        augmented_images = tf.cond(is_image_batch,
+                                   lambda: tf.map_fn(apply_on_image, images),
+                                   lambda: apply_on_image(images))
+        return augmented_images
+
+    def __call__(self, images):
+        """Calls self as a function. Alias of `apply` method."""
+        return self.apply(images)

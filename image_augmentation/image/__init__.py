@@ -3,3 +3,4 @@ from image_augmentation.image.image_ops import auto_contrast, color, sharpness, 
 from image_augmentation.image.layers import RandomCutout
 
 from image_augmentation.image.policy_augmentation import PolicyAugmentation, some_test_policy, autoaugment_policy
+from image_augmentation.image.policy_augmentation import RandAugment
