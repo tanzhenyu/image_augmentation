@@ -291,9 +291,8 @@ def randomly_select_subpolicy(policy):
 
 class PolicyAugmentation:
     """Apply data augmentation on images using a data augmentation policy.
-    The data augmentation policy must be either an AutoAugment (https://arxiv.org/abs/1805.09501),
-    RandAugment (https://arxiv.org/abs/1909.13719) or a custom policy. AutoAugment policies can
-    be obtained using `autoaugment_policy(dataset)`.
+    The data augmentation policy must be either an AutoAugment (https://arxiv.org/abs/1805.09501)
+    or a custom policy. AutoAugment policies can be obtained using `autoaugment_policy(dataset)`.
 
     Returns:
         A 1-arg callable that can be used to augment a batch of images
@@ -375,7 +374,35 @@ def apply_randaugment(image, num_layers, magnitude, args):
 
 
 class RandAugment:
+    """Apply data augmentation on images using RandAugment.
+    This is an implementation of RandAugment as described in "RandAugment: Practical automated data
+    augmentation with a reduced search space" by Cubuk, Zoph et al.
+
+    Returns:
+        A 1-arg callable that can be used to augment a batch of images
+            or a single image.
+    """
+
     def __init__(self, magnitude, num_layers, translate_max=150, rotate_max_degree=30, cutout_max_size=60, seed=None):
+        """Applies data augmentation on image(s) using RandAugment strategy.
+
+        Args:
+            magnitude: An int hyperparameter `M` (as per paper) in the range [0, 30)
+                used to determine the magnitude of operation of each image op.
+                Usually best values are in the range `[5, 30]`.
+            num_layers: An int hyperparameter `N` (as per paper) used to determine the
+                number of randomly selected image op(s) that are to be applied on each image.
+                Usually best values are in the range `[1, 3]`.
+            translate_max: An int hyperparameter that is used to determine the
+                allowed maximum number of pixels for translation. Default is `150`.
+            rotate_max_degree: An int hyperparameter in the range [0, 360] to determine
+                the allowed maximum degree of rotation. Default is `30`.
+            cutout_max_size: An int hyperparameter to determine the allowed maximum
+                size of square patch for cutout (should be divisible by 2). Default is `60`.
+            seed: An int value for setting seed to ensure deterministic results.
+                Default is `None`.
+        """
+        # TODO: update cutout const when using EfficientNet
         self.magnitude = magnitude
         self.num_layers = num_layers
 
@@ -391,6 +418,15 @@ class RandAugment:
             tf.random.set_seed(seed)
 
     def apply(self, images):
+        """Applies augmentation on a batch of `images` or on a single image.
+
+        Args:
+            images: An int or float tensor of shape `[height, width, num_channels]` or
+                `[num_images, height, width, num_channels]`.
+
+        Returns:
+             A tensor with same shape and type as that of `images`.
+        """
         images = tf.convert_to_tensor(images)
         is_image_batch = tf.rank(images) == 4
 
