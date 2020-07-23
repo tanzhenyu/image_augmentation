@@ -6,13 +6,20 @@ import tensorflow_addons as tfa
 from image_augmentation.image import auto_contrast, invert, equalize, solarize, posterize
 from image_augmentation.image import contrast, color, brightness, sharpness, cutout
 
-MAX_LEVEL = 10
+
+def convenient_type(tfa_image_fn):
+    """Convenience function to cast `replace` argument to match image dtype.
+    Required for `tfa.image.translate_xy`, `tfa.image.shear_x`, `tfa.image.shear_y`
+    function calls.
+    """
+    return lambda image, level, replace: tfa_image_fn(image, level, tf.cast(replace, image.dtype))
+
 
 TRANSFORMS = {
-    "ShearX": tfa.image.shear_x,
-    "ShearY": tfa.image.shear_y,
-    "TranslateX": tfa.image.translate_xy,
-    "TranslateY": tfa.image.translate_xy,
+    "ShearX": convenient_type(tfa.image.shear_x),
+    "ShearY": convenient_type(tfa.image.shear_y),
+    "TranslateX": convenient_type(tfa.image.translate_xy),
+    "TranslateY": convenient_type(tfa.image.translate_xy),
     "Rotate": tfa.image.rotate,
     "AutoContrast": auto_contrast,
     "Invert": invert,
@@ -144,10 +151,10 @@ def autoaugment_policy(dataset='reduced_imagenet'):
     return policies[dataset]
 
 
-def levels_to_args(translate_max_loc=150, rotate_max_deg=30, cutout_max_size=60):
+def levels_to_args(translate_max_loc=150, rotate_max_deg=30, cutout_max_size=60, max_level=10):
     """Converts levels in augmentation policy to specific magnitude
     for applying with image op(s). Note: Some image op(s) do not use
-    magnitude values are for them value of level can be ignored.
+    magnitude values are for them the value of level can be ignored.
 
     Args:
         translate_max_loc: An int hyperparameter that is used to determine the
@@ -156,9 +163,12 @@ def levels_to_args(translate_max_loc=150, rotate_max_deg=30, cutout_max_size=60)
             the allowed maximum degree of rotation. Default is `130`.
         cutout_max_size: An int hyperparameter to determine the allowed maximum size
             of square patch for cutout (should be divisible by 2). Default is `60`.
+        max_level: An int value that is used to determine range of levels for
+            applying the op(s). The resulting magnitudes of operation would be
+            in the range `[0, max_level)`. Default is `10`.
 
     Returns:
-        dictionary of op names and a convenience function for
+        dictionary of op names and an associated convenience function for
             applying them using subpolicy levels.
     """
     # shear will have range [-0.3, 0.3] by applying random negation
@@ -177,7 +187,7 @@ def levels_to_args(translate_max_loc=150, rotate_max_deg=30, cutout_max_size=60)
     gray_color = (128, 128, 128)
 
     def param(level, min_arg, max_arg):
-        return (level * (max_arg - min_arg) / MAX_LEVEL) + min_arg
+        return (level * (max_arg - min_arg) / max_level) + min_arg
 
     def randomly_negate(arg):
         random_draw = tf.floor(tf.random.uniform([]) + 0.5)
@@ -189,7 +199,7 @@ def levels_to_args(translate_max_loc=150, rotate_max_deg=30, cutout_max_size=60)
         level = param(level, shear_min_arg, shear_max_arg)
         level = randomly_negate(level)
         replace = gray_color
-        return level, replace
+        return tf.constant(level), tf.constant(replace)
     shear_x_args = shear_y_args = _shear_args
 
     def _translate_args(level, is_x):
@@ -202,14 +212,14 @@ def levels_to_args(translate_max_loc=150, rotate_max_deg=30, cutout_max_size=60)
             translate_to = [round(level), 0]
         else:
             translate_to = [0, round(level)]
-        return translate_to, replace
+        return tf.constant(translate_to), tf.constant(replace)
     translate_x_args = lambda level: _translate_args(level, is_x=True)
     translate_y_args = lambda level: _translate_args(level, is_x=False)
 
     def rotate_args(level):
         angle = param(level, rotate_min_arg, rotate_max_arg)
         angle = randomly_negate(angle)
-        return angle,
+        return tf.constant(angle),
 
     def _no_args(_):
         return ()
@@ -219,16 +229,16 @@ def levels_to_args(translate_max_loc=150, rotate_max_deg=30, cutout_max_size=60)
     def solarize_args(level):
         threshold = param(level, solarize_min_arg, solarize_max_arg)
         threshold = round(threshold)
-        return threshold,
+        return tf.constant(threshold),
 
     def posterize_args(level):
         num_bits = param(level, posterize_min_arg, posterize_max_arg)
         num_bits = round(num_bits)
-        return num_bits,
+        return tf.constant(num_bits),
 
     def _blend_args(level):
         magnitude = param(level, blend_min_arg, blend_max_arg)
-        return magnitude,
+        return tf.constant(magnitude),
     # contrast, color, brightness, sharpness uses the same args
     contrast_args = color_args = brightness_args = sharpness_args = _blend_args
 
@@ -236,7 +246,7 @@ def levels_to_args(translate_max_loc=150, rotate_max_deg=30, cutout_max_size=60)
         size = param(level, cutout_min_arg, cutout_max_arg)
         size = round(size)
         size = size + 1 if size % 2 != 0 else size
-        return size,
+        return tf.constant(size),
 
     return {
         "ShearX": shear_x_args,
@@ -281,16 +291,16 @@ def randomly_select_subpolicy(policy):
 
 class PolicyAugmentation:
     """Apply data augmentation on images using a data augmentation policy.
-    The data augmentation policy must be either an AutoAugment (https://arxiv.org/abs/1805.09501),
-    RandAugment (https://arxiv.org/abs/1909.13719) or a custom policy. AutoAugment policies can
-    be obtained using `autoaugment_policy(dataset)`.
+    The data augmentation policy must be either an AutoAugment (https://arxiv.org/abs/1805.09501)
+    or a custom policy. AutoAugment policies can be obtained using `autoaugment_policy(dataset)`.
 
     Returns:
         A 1-arg callable that can be used to augment a batch of images
             or a single image.
     """
 
-    def __init__(self, policy, translate_max=150, rotate_max_degree=30, cutout_max_size=60, seed=None):
+    def __init__(self, policy, translate_max=150, rotate_max_degree=30,
+                 cutout_max_size=60, max_level=10, seed=None):
         """Applies data augmentation on image(s) using a `policy`.
 
         Args:
@@ -302,13 +312,18 @@ class PolicyAugmentation:
                 the allowed maximum degree of rotation. Default is `30`.
             cutout_max_size: An int hyperparameter to determine the allowed maximum
                 size of square patch for cutout (should be divisible by 2). Default is `60`.
+            max_level: An int value to determine the maximum level for magnitude values that will be
+                used for applying an image op. Resulting levels are in the allowed range
+                `[0, max_level)`. AutoAugment uses levels in the range `[0, 10)` hence, default is `10`.
             seed: An int value for setting seed to ensure deterministic results.
                 Default is `None`.
         """
         self.translate_max = translate_max
         self.rotate_max_degree = rotate_max_degree
         self.cutout_max_size = cutout_max_size
-        self.args_level = levels_to_args(translate_max, rotate_max_degree, cutout_max_size)
+        self.max_level = max_level
+        self.args_level = levels_to_args(self.max_level, self.translate_max,
+                                         self.rotate_max_degree, self.cutout_max_size)
         self.policy = policy
 
         if seed is not None:
@@ -332,6 +347,91 @@ class PolicyAugmentation:
             subpolicy = randomly_select_subpolicy(self.policy)
             augmented_image = apply_subpolicy(image, subpolicy, self.args_level)
             return augmented_image
+
+        # if batch, use map_fn and then apply, else apply directly
+        augmented_images = tf.cond(is_image_batch,
+                                   lambda: tf.map_fn(apply_on_image, images),
+                                   lambda: apply_on_image(images))
+        return augmented_images
+
+    def __call__(self, images):
+        """Calls self as a function. Alias of `apply` method."""
+        return self.apply(images)
+
+
+def apply_randaugment(image, num_layers, magnitude, args):
+    """Applies RandAugment on a single image with given value of `M` and `N`."""
+    def apply_operation(image_, op_name_, level_):
+        return TRANSFORMS[op_name_](image_, *args[op_name_](level_))
+    op_names = list(TRANSFORMS.keys())
+
+    # select and apply random op(s) on the image sequentially for `num_layers` number of times
+    for _ in tf.range(num_layers):
+        op_idx = tf.random.uniform([], 0, len(op_names), dtype=tf.int32)
+        op_name = op_names[op_idx]
+        image = apply_operation(image, op_name, magnitude)
+    return image
+
+
+class RandAugment:
+    """Apply data augmentation on images using RandAugment.
+    This is an implementation of RandAugment as described in "RandAugment: Practical automated data
+    augmentation with a reduced search space" by Cubuk, Zoph et al.
+
+    Returns:
+        A 1-arg callable that can be used to augment a batch of images
+            or a single image.
+    """
+
+    def __init__(self, magnitude, num_layers, translate_max=150, rotate_max_degree=30, cutout_max_size=60, seed=None):
+        """Applies data augmentation on image(s) using RandAugment strategy.
+
+        Args:
+            magnitude: An int hyperparameter `M` (as per paper) in the range [0, 30)
+                used to determine the magnitude of operation of each image op.
+                Usually best values are in the range `[5, 30]`.
+            num_layers: An int hyperparameter `N` (as per paper) used to determine the
+                number of randomly selected image op(s) that are to be applied on each image.
+                Usually best values are in the range `[1, 3]`.
+            translate_max: An int hyperparameter that is used to determine the
+                allowed maximum number of pixels for translation. Default is `150`.
+            rotate_max_degree: An int hyperparameter in the range [0, 360] to determine
+                the allowed maximum degree of rotation. Default is `30`.
+            cutout_max_size: An int hyperparameter to determine the allowed maximum
+                size of square patch for cutout (should be divisible by 2). Default is `60`.
+            seed: An int value for setting seed to ensure deterministic results.
+                Default is `None`.
+        """
+        # TODO: update cutout const when using EfficientNet
+        self.magnitude = magnitude
+        self.num_layers = num_layers
+
+        self.translate_max = translate_max
+        self.rotate_max_degree = rotate_max_degree
+        self.cutout_max_size = cutout_max_size
+
+        max_level = 30  # RandAugment paper suggests max value as 30
+        self.args_level = levels_to_args(max_level, self.translate_max,
+                                         self.rotate_max_degree, self.cutout_max_size)
+
+        if seed is not None:
+            tf.random.set_seed(seed)
+
+    def apply(self, images):
+        """Applies augmentation on a batch of `images` or on a single image.
+
+        Args:
+            images: An int or float tensor of shape `[height, width, num_channels]` or
+                `[num_images, height, width, num_channels]`.
+
+        Returns:
+             A tensor with same shape and type as that of `images`.
+        """
+        images = tf.convert_to_tensor(images)
+        is_image_batch = tf.rank(images) == 4
+
+        def apply_on_image(image):
+            return apply_randaugment(image, self.num_layers, self.magnitude, self.args_level)
 
         # if batch, use map_fn and then apply, else apply directly
         augmented_images = tf.cond(is_image_batch,

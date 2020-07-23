@@ -124,7 +124,7 @@ def test_equalize():
     float_eq_image = equalize(float_image)
     _display_images(float_image, float_eq_image)
 
-    uneq_ex_image = tf.image.decode_jpeg(tf.io.read_file("../../images/test_example_unequalized.jpg"), channels=1)
+    uneq_ex_image = tf.image.decode_jpeg(tf.io.read_file("../../example_images/test_example_unequalized.jpg"), channels=1)
     eq_ex_image = equalize(uneq_ex_image)
     _display_images(uneq_ex_image[..., 0], eq_ex_image[..., 0])
 
@@ -152,7 +152,7 @@ def test_auto_contrast():
 
 
 def test_color():
-    image = tf.image.decode_jpeg(tf.io.read_file("../../images/test_example.jpg"))
+    image = tf.image.decode_jpeg(tf.io.read_file("../../example_images/test_example.jpg"))
     factor = 0.5
     colored_image = color(image, factor)
 
@@ -172,7 +172,7 @@ def test_color():
 
 
 def test_sharpness():
-    image = tf.image.decode_jpeg(tf.io.read_file("../../images/test_example.jpg"))
+    image = tf.image.decode_jpeg(tf.io.read_file("../../example_images/test_example.jpg"))
     factor = 0.5
     sharpened_image = sharpness(image, factor)
 
@@ -192,8 +192,8 @@ def test_sharpness():
 
 
 def test_sample_pairing():
-    image1 = tf.image.decode_jpeg(tf.io.read_file("../../images/tf-flowers_test_example1.jpg"))
-    image2 = tf.image.decode_jpeg(tf.io.read_file("../../images/tf-flowers_test_example2.jpg"))
+    image1 = tf.image.decode_jpeg(tf.io.read_file("../../example_images/tf-flowers_test_example1.jpg"))
+    image2 = tf.image.decode_jpeg(tf.io.read_file("../../example_images/tf-flowers_test_example2.jpg"))
 
     paired_image = sample_pairing(image1, image2, 0.5)
 
@@ -245,7 +245,7 @@ def test_brightness():
 
 
 def test_contrast():
-    image = tf.image.decode_jpeg(tf.io.read_file("../../images/test_example.jpg"))
+    image = tf.image.decode_jpeg(tf.io.read_file("../../example_images/test_example.jpg"))
     factor = 2.0
     contrast_image = contrast(image, factor)
 

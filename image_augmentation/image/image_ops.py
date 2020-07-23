@@ -220,7 +220,7 @@ def blend(image1, image2, factor, name=None):
         image1: An int or float tensor of shape `[height, width, num_channels]`.
         image2: An int or float tensor of shape `[height, width, num_channels]`.
         factor: A 0-D float tensor or single floating point value depicting
-            a weight above 0.0 for combining the images.
+            a weight above 0.0 for combining the example_images.
         name: An optional string for name of the operation.
 
     Returns:
@@ -234,17 +234,17 @@ def blend(image1, image2, factor, name=None):
         return image1
     elif factor == 1.0:
         return image2
+    else:
+        with tf.name_scope(name or "blend"):
+            orig_dtype = image2.dtype
 
-    with tf.name_scope(name or "blend"):
-        orig_dtype = image2.dtype
+            image1, image2 = tf.image.convert_image_dtype(image1, tf.float32), tf.image.convert_image_dtype(image2, tf.float32)
+            scaled_diff = (image2 - image1) * factor
 
-        image1, image2 = tf.image.convert_image_dtype(image1, tf.float32), tf.image.convert_image_dtype(image2, tf.float32)
-        scaled_diff = (image2 - image1) * factor
+            blended_image = image1 + scaled_diff
 
-        blended_image = image1 + scaled_diff
-
-        blended_image = tf.image.convert_image_dtype(blended_image, orig_dtype, saturate=True)
-        return blended_image
+            blended_image = tf.image.convert_image_dtype(blended_image, orig_dtype, saturate=True)
+            return blended_image
 
 
 @tf.function
@@ -257,7 +257,7 @@ def sample_pairing(image1, image2, weight, name=None):
         image1: An int or float tensor of shape `[height, width, num_channels]`.
         image2: An int or float tensor of shape `[height, width, num_channels]`.
         weight: A 0-D float tensor or single floating point value depicting
-            a weight factor above 0.0 for combining the images.
+            a weight factor above 0.0 for combining the example_images.
         name: An optional string for name of the operation.
 
     Returns:

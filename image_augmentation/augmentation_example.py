@@ -2,7 +2,7 @@ import tensorflow as tf
 from matplotlib import pyplot as plt
 import random
 
-from image_augmentation.image import PolicyAugmentation, autoaugment_policy
+from image_augmentation.image import PolicyAugmentation, autoaugment_policy, RandAugment
 
 image_paths = tf.io.gfile.glob("/Volumes/Card/Datasets/flower_photos/*/*.jpg")
 random.shuffle(image_paths)
@@ -44,4 +44,11 @@ plt.suptitle("Original Images")
 
 show_images(augmented_images)
 plt.suptitle("Image Data Augmentation using AutoAugment (reduced ImageNet) Policy")
+
+rand_augmenter = RandAugment(15, 3)
+
+augmented_images = rand_augmenter(original_images)
+show_images(augmented_images)
+plt.suptitle("Image Data Augmentation using RandAugment (M=15, N=3)")
+
 plt.show()

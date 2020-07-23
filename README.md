@@ -24,8 +24,9 @@ This project is currently a work in progress and includes the following componen
     - Sample Pairing (https://arxiv.org/abs/1801.02929)
 - [Pre-processing](./image_augmentation/preprocessing) using Baseline Augmentation and Standardization or Rescaling
 - [Image Data Augmentation](./image_augmentation/image#image-data-augmentation)
-    - Data augmentation using AutoAugment policies
-    - [Policy Augmentation](./image_augmentation/image/policy_augmentation.py#L282-L344)
+    - Data augmentation using AutoAugment policies / RandAugment strategy
+    - [Policy Augmentation](image_augmentation/image/augmentation.py#L292-L359) (for AutoAugment)
+    - [RandAugment](image_augmentation/image/augmentation.py#L376-L444)
 
 ## Datasets
 
