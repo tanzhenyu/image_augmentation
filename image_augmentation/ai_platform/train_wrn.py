@@ -207,18 +207,19 @@ def main(args):
     wrn.summary()
 
     inp = keras.layers.Input(inp_shape, name='image_input')
-    if args.no_cutout and (args.dataset.endswith("cifar10") or args.dataset.endswith("svhn")):
-        x = baseline_augment(inp, cutout=False)
-    else:
-        x = baseline_augment(inp)
 
     # mean normalization of CIFAR10, SVHN require that example_images be supplied
     if args.dataset.endswith("cifar10") or args.dataset.endswith("svhn"):
         images_only = train_ds.map(lambda image, label: image)
-        x = standardize(x, images_only)
+        x = standardize(inp, images_only)
     # for ImageNet mean normalization is not required, rescaling is used instead
     else:
-        x = standardize(x)
+        x = standardize(inp)
+
+    if args.no_cutout and (args.dataset.endswith("cifar10") or args.dataset.endswith("svhn")):
+        x = baseline_augment(x, cutout=False)
+    else:
+        x = baseline_augment(x)
 
     x = wrn(x)
     # model combines baseline augmentation, standardization and wide resnet layers

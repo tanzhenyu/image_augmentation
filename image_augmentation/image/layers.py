@@ -10,9 +10,11 @@ from image_augmentation.image.image_ops import cutout
 class RandomCutout(Layer):
     def __init__(self,
                  size=16,
+                 color=128,
                  name=None,
                  **kwargs):
         self.size = size
+        self.color = color
         super(RandomCutout, self).__init__(name=name, **kwargs)
 
     def call(self, inputs, training=True):
@@ -21,7 +23,7 @@ class RandomCutout(Layer):
                 training = K.learning_phase()
 
             if training:
-                return tf.map_fn(lambda x: cutout(x, self.size), inputs)
+                return tf.map_fn(lambda x: cutout(x, self.size, self.color), inputs)
             else:
                 return inputs
 

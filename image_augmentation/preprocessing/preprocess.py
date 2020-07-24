@@ -27,7 +27,7 @@ def cifar_baseline_augmentation(x, cutout=True):
     x = ZeroPadding2D((4, 4), name='padding')(x)
     x = RandomCrop(32, 32, name='crop')(x)
     if cutout:
-        x = RandomCutout(16, name='cutout')(x)
+        x = RandomCutout(16, 0.0, name='cutout')(x)
     return x
 
 
