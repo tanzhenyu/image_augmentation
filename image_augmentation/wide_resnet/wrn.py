@@ -3,7 +3,7 @@
 from tensorflow.keras.layers import Conv2D
 from tensorflow.keras.layers import Activation, BatchNormalization, Add
 from tensorflow.keras.layers import GlobalAveragePooling2D, Dropout, Dense
-from tensorflow.keras.initializers import he_normal
+from tensorflow.keras.initializers import RandomNormal, he_normal
 from tensorflow.keras import Input, Model
 
 from tensorflow.keras import backend as K
@@ -12,7 +12,8 @@ from functools import partial
 
 CHANNEL_AXIS = 1 if K.image_data_format() == 'channels_first' else -1
 
-_batch_norm = partial(BatchNormalization, axis=CHANNEL_AXIS)
+_batch_norm = partial(BatchNormalization, axis=CHANNEL_AXIS,
+                      momentum=0.1, epsilon=1e-5, gamma_initializer=RandomNormal(0., 1.))
 _relu = partial(Activation, 'relu')
 
 
