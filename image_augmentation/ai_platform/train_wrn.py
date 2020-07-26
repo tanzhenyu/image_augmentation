@@ -196,6 +196,9 @@ def main(args):
     # set level of verbosity
     logging.getLogger("tensorflow").setLevel(args.verbosity)
 
+    # display script args
+    print(args)
+
     if args.multi_gpu:
         # set GPU memory growth to avoid fork cannot allocate memory warning in multi-GPU env
         gpus = tf.config.experimental.list_physical_devices('GPU')
