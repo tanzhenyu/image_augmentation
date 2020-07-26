@@ -150,6 +150,12 @@ def get_args():
         help='L2 regularization to be applied on all weights '
              'of the network, default=0.0005')
     parser.add_argument(
+        '--multi-gpu',
+        default=False,
+        const=True,
+        action='store_const',
+        help='single host multi-GPU sync training, default is off')
+    parser.add_argument(
         '--verbosity',
         choices=['DEBUG', 'ERROR', 'FATAL', 'INFO', 'WARN'],
         default='INFO')
@@ -190,10 +196,11 @@ def main(args):
     # set level of verbosity
     logging.getLogger("tensorflow").setLevel(args.verbosity)
 
-    # set GPU memory growth to avoid fork cannot allocate memory warning in multi-GPU env
-    gpus = tf.config.experimental.list_physical_devices('GPU')
-    for gpu in gpus:
-        tf.config.experimental.set_memory_growth(gpu, True)
+    if args.multi_gpu:
+        # set GPU memory growth to avoid fork cannot allocate memory warning in multi-GPU env
+        gpus = tf.config.experimental.list_physical_devices('GPU')
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
 
     # image input shape is set 32 x 32
     inp_shape = (32, 32, 3)
@@ -232,7 +239,10 @@ def main(args):
             plt.savefig(fig_file, format="pdf")
         print("Wrote file to", fig_file_path)
 
-    strategy = tf.distribute.MirroredStrategy()
+    if args.multi_gpu:
+        strategy = tf.distribute.MirroredStrategy()
+    else:
+        strategy = tf.distribute.get_strategy()
     print('Number of available devices: {}'.format(strategy.num_replicas_in_sync))
 
     with strategy.scope():
