@@ -333,10 +333,6 @@ def main(args):
         if args.optimizer == 'sgdr':
             lr = keras.experimental.CosineDecayRestarts(args.init_lr, steps_per_epoch * args.sgdr_t0,
                                                         args.sgdr_t_mul)
-        elif args.drop_lr_by:
-            lr_boundaries = [(steps_per_epoch * epoch) for epoch in sorted(args.drop_lr_every)]
-            lr_values = [args.init_lr * (args.drop_lr_by ** idx) for idx in range(len(lr_boundaries) + 1)]
-            lr = keras.optimizers.schedules.PiecewiseConstantDecay(lr_boundaries, lr_values)
         else:
             lr = args.init_lr
 
@@ -366,6 +362,16 @@ def main(args):
     tb_path = args.job_dir + '/tensorboard'
     checkpoint_path = args.job_dir + '/checkpoint'
     callbacks = [keras.callbacks.TensorBoard(tb_path), keras.callbacks.ModelCheckpoint(checkpoint_path)]
+
+    if args.drop_lr_by:
+        boundaries = tf.convert_to_tensor(args.drop_lr_every)
+
+        def lr_fn(epoch):
+            bounds = (epoch + 1) >= boundaries
+            bounds = tf.cast(bounds, tf.float32)
+            exp_factor = tf.reduce_sum(bounds)
+            return args.init_lr * (args.drop_lr_by ** exp_factor)
+        callbacks.append(keras.callbacks.LearningRateScheduler(lr_fn, verbose=1))
 
     print("Using tensorboard directory as", tb_path)
 
