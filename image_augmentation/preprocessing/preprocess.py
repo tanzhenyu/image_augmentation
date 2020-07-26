@@ -42,8 +42,6 @@ def cifar_standardization(x, mode='FEATURE_NORMALIZE', data_samples=None):
 
 
 def cifar_baseline_augmentation(x, padding_mode='ZEROS', cutout=True):
-    x = RandomFlip(mode='horizontal', name='h_flip')(x)
-
     padding_mode = padding_mode.upper()
     assert padding_mode in ['ZEROS', 'REFLECT']
     if padding_mode == 'ZEROS':
@@ -51,10 +49,12 @@ def cifar_baseline_augmentation(x, padding_mode='ZEROS', cutout=True):
     elif padding_mode == 'REFLECT':
         x = ReflectPadding2D((4, 4), name='padding')(x)
 
-    x = RandomCrop(32, 32, name='crop')(x)
+    x = RandomFlip(mode='horizontal', name='h_flip')(x)
 
     if cutout:
         x = RandomCutout(16, 0.0, name='cutout')(x)
+
+    x = RandomCrop(32, 32, name='crop')(x)
     return x
 
 

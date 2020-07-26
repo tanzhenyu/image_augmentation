@@ -19,7 +19,7 @@ L2_REG=0.0005
 
 python3 -m image_augmentation.ai_platform.train_wrn --job-dir=${JOB_DIR} \
     --epochs=${EPOCHS} --batch-size=${BATCH_SIZE} --wrn-depth=${WRN_DEPTH} \
-    --wrn-k=${WRN_K} --auto-augment --dataset=${DATASET} --no-cutout \
+    --wrn-k=${WRN_K} --no-cutout --dataset=${DATASET} --no-cutout \
     --padding-mode ${PADDING_MODE} --normalization ${NORMALIZATION} \
     --optimizer ${OPTIMIZER} --init-lr ${INIT_LR} --l2-reg ${L2_REG} \
     --drop-lr-by ${DROP_LR_BY} --drop-lr-every 60 --drop-lr-every 120 --drop-lr-every 160 \
