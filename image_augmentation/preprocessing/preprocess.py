@@ -19,20 +19,20 @@ def cifar_standardization(x, mode='FEATURE_NORMALIZE', data_samples=None):
     mode = mode.upper()
     assert mode in ['FEATURE_NORMALIZE', 'PIXEL_MEAN_SUBTRACT']
 
-    if mode == 'PIXEL_MEAN_SUBTRACT' and data_samples == None:
+    if mode == 'PIXEL_MEAN_SUBTRACT' and not data_samples:
         raise ValueError('`data_samples` argument should not be `None`, '
                          'when `mode="PIXEL_MEAN_SUBTRACT"`.')
 
     if mode == 'FEATURE_NORMALIZE':
-        cifar_mean = tf.cast(CIFAR_MEAN, tf.float32)
-        cifar_std = tf.cast(CIFAR_STD, tf.float32)
+        cifar_mean = tf.cast(CIFAR_MEAN, tf.float32).numpy()
+        cifar_std = tf.cast(CIFAR_STD, tf.float32).numpy()
 
-        x = Rescaling(scale=1 / cifar_std, offset=-(cifar_mean / cifar_std), name='mean_normalization')(x)
+        x = Rescaling(scale=1. / cifar_std, offset=-(cifar_mean / cifar_std), name='mean_normalization')(x)
     elif mode == 'PIXEL_MEAN_SUBTRACT':
         mean_subtraction_layer = Normalization(axis=[1, 2, 3], name='pixel_mean_subtraction')
         mean_subtraction_layer.adapt(data_samples)
 
-        # set variance=1. and keep mean values as is
+        # set values of variance = 1. and keep mean values as is
         mean_pixels = mean_subtraction_layer.get_weights()[0]
         mean_subtraction_layer.set_weights([mean_pixels, tf.ones_like(mean_pixels)])
 

@@ -70,10 +70,23 @@ def get_args():
         help='dataset that is to be used for training and evaluating the model, default="cifar10"')
     parser.add_argument(
         '--data-dir',
-        required=True,
+        required=False,
+        default=None,
         type=str,
         help='local or GCS location for accessing data with TFDS '
              '(directory for tensorflow_datasets)')
+    parser.add_argument(
+        '--padding-mode',
+        choices=['zero', 'reflect'],
+        default='reflect',
+        help='padding mode to be used to pad pixels before cropping, '
+             '(applicable only in case of CIFAR, SVHN) default is "reflect"')
+    parser.add_argument(
+        '--normalization',
+        choices=['pixel_center', 'rgb_normalization'],
+        default='rgb_normalization',
+        help='normalization that is to be applied on images, '
+             '(applicable only in case of CIFAR, SVHN) default is "rgb_normalization"')
     parser.add_argument(
         '--optimizer',
         default='sgdr',
@@ -117,13 +130,13 @@ def get_args():
         '--weight-decay',
         default=0.0,
         type=float,
-        help='weight decay of training step, default=0.0, off')
+        help='(SGDW) weight decay of training step, default=0.0, off')
     parser.add_argument(
         '--l2-reg',
-        default=0.0,
+        default=0.0005,
         type=float,
-        help='L2 regularization to be applied on weights of conv '
-             'and dense layers, off by default')
+        help='L2 regularization to be applied on all weights '
+             'of the network, default=0.0005')
     parser.add_argument(
         '--verbosity',
         choices=['DEBUG', 'ERROR', 'FATAL', 'INFO', 'WARN'],
@@ -208,18 +221,27 @@ def main(args):
 
     inp = keras.layers.Input(inp_shape, name='image_input')
 
-    # mean normalization of CIFAR10, SVHN require that example_images be supplied
+    # whether to use cutout in baseline augmentation step
+    cutout = not args.no_cutout
+    # CIFAR-10 and SVHN uses similar augmentation
     if args.dataset.endswith("cifar10") or args.dataset.endswith("svhn"):
-        images_only = train_ds.map(lambda image, label: image)
-        x = standardize(inp, images_only)
-    # for ImageNet mean normalization is not required, rescaling is used instead
+        x = baseline_augment(inp, args.padding_mode, cutout)
+    # ImageNet uses different
     else:
-        x = standardize(inp)
+        x = baseline_augment(inp)
 
-    if args.no_cutout and (args.dataset.endswith("cifar10") or args.dataset.endswith("svhn")):
-        x = baseline_augment(x, cutout=False)
+    if args.dataset.endswith("cifar10") or args.dataset.endswith("svhn"):
+        # pixel center of CIFAR10, SVHN require that image samples be supplied
+        # (to learn the pixel wise mean)
+        if args.normalization == 'pixel_center':
+            images_only = train_ds.map(lambda image, label: image)
+            x = standardize(x, mode='pixel_mean_subtract', data_samples=images_only)
+        # rgb normalization uses rescaling using known RGB mean(s) and std(s)
+        else:
+            x = standardize(x, mode='feature_normalize')
+    # for ImageNet rescaling is used to scale inputs to range [-1, +1]
     else:
-        x = baseline_augment(x)
+        x = standardize(x)
 
     x = wrn(x)
     # model combines baseline augmentation, standardization and wide resnet layers
