@@ -227,38 +227,45 @@ def main(args):
             plt.savefig(fig_file, format="pdf")
         print("Wrote file to", fig_file_path)
 
-    wrn = WideResNet(inp_shape, depth=args.wrn_depth, k=args.wrn_k,
-                     dropout=args.wrn_dropout, num_classes=num_classes)
-    wrn.summary()
+    strategy = tf.distribute.MirroredStrategy()
+    print('Number of available devices: {}'.format(strategy.num_replicas_in_sync))
 
-    inp = keras.layers.Input(inp_shape, name='image_input')
+    with strategy.scope():
+        wrn = WideResNet(inp_shape, depth=args.wrn_depth, k=args.wrn_k,
+                         dropout=args.wrn_dropout, num_classes=num_classes)
+        wrn.summary()
+
+        inp = keras.layers.Input(inp_shape, name='image_input')
 
     # whether to use cutout in baseline augmentation step
     cutout = not args.no_cutout
-    # CIFAR-10 and SVHN uses similar augmentation
-    if args.dataset.endswith("cifar10") or args.dataset.endswith("svhn"):
-        x = baseline_augment(inp, args.padding_mode, cutout)
-    # ImageNet uses different
-    else:
-        x = baseline_augment(inp)
 
-    if args.dataset.endswith("cifar10") or args.dataset.endswith("svhn"):
-        # pixel center of CIFAR10, SVHN require that image samples be supplied
-        # (to learn the pixel wise mean)
-        if args.normalization == 'pixel_center':
-            images_only = train_ds.map(lambda image, label: image)
-            x = standardize(x, mode='pixel_mean_subtract', data_samples=images_only)
-        # rgb normalization uses rescaling using known RGB mean(s) and std(s)
+    with strategy.scope():
+        # CIFAR-10 and SVHN uses similar augmentation
+        if args.dataset.endswith("cifar10") or args.dataset.endswith("svhn"):
+            x = baseline_augment(inp, args.padding_mode, cutout)
+        # ImageNet uses different
         else:
-            x = standardize(x, mode='feature_normalize')
-    # for ImageNet rescaling is used to scale inputs to range [-1, +1]
-    else:
-        x = standardize(x)
+            x = baseline_augment(inp)
 
-    x = wrn(x)
-    # model combines baseline augmentation, standardization and wide resnet layers
-    model = keras.Model(inp, x, name='WRN')
-    model.summary()
+    with strategy.scope():
+        if args.dataset.endswith("cifar10") or args.dataset.endswith("svhn"):
+            # pixel center of CIFAR10, SVHN require that image samples be supplied
+            # (to learn the pixel wise mean)
+            if args.normalization == 'pixel_center':
+                images_only = train_ds.map(lambda image, label: image)
+                x = standardize(x, mode='pixel_mean_subtract', data_samples=images_only)
+            # rgb normalization uses rescaling using known RGB mean(s) and std(s)
+            else:
+                x = standardize(x, mode='feature_normalize')
+        # for ImageNet rescaling is used to scale inputs to range [-1, +1]
+        else:
+            x = standardize(x)
+
+        x = wrn(x)
+        # model combines baseline augmentation, standardization and wide resnet layers
+        model = keras.Model(inp, x, name='WRN')
+        model.summary()
 
     # cache the dataset only if possible
     if args.dataset not in ['svhn', 'imagenet']:
@@ -300,41 +307,42 @@ def main(args):
     steps_per_epoch = tf.data.experimental.cardinality(train_ds)
     steps_per_epoch = steps_per_epoch.numpy()  # helps model optimizer become JSON serializable
 
-    # any one of the following:
-    # - use an SGD optimizer w/ or w/o weight decay (SGDW / SGD) or just Adam
-    # - use a callable learning rate schedule for SGDR or not
-    # - use SGD Nesterov or not
-    if args.optimizer == 'sgdr':
-        lr = keras.experimental.CosineDecayRestarts(args.init_lr, steps_per_epoch * args.sgdr_t0,
-                                                    args.sgdr_t_mul)
-    elif args.drop_lr_by:
-        lr_boundaries = [(steps_per_epoch * epoch) for epoch in sorted(args.drop_lr_every)]
-        lr_values = [args.init_lr * (args.drop_lr_by ** idx) for idx in range(len(lr_boundaries) + 1)]
-        lr = keras.optimizers.schedules.PiecewiseConstantDecay(lr_boundaries, lr_values)
-    else:
-        lr = args.init_lr
-
-    if args.optimizer.startswith('sgd'):
-        if args.weight_decay == 0:
-            opt = keras.optimizers.SGD(lr, momentum=0.9, nesterov=args.sgd_nesterov)
+    with strategy.scope():
+        # any one of the following:
+        # - use an SGD optimizer w/ or w/o weight decay (SGDW / SGD) or just Adam
+        # - use a callable learning rate schedule for SGDR or not
+        # - use SGD Nesterov or not
+        if args.optimizer == 'sgdr':
+            lr = keras.experimental.CosineDecayRestarts(args.init_lr, steps_per_epoch * args.sgdr_t0,
+                                                        args.sgdr_t_mul)
+        elif args.drop_lr_by:
+            lr_boundaries = [(steps_per_epoch * epoch) for epoch in sorted(args.drop_lr_every)]
+            lr_values = [args.init_lr * (args.drop_lr_by ** idx) for idx in range(len(lr_boundaries) + 1)]
+            lr = keras.optimizers.schedules.PiecewiseConstantDecay(lr_boundaries, lr_values)
         else:
-            opt = tfa.optimizers.SGDW(args.weight_decay, lr, momentum=0.9, nesterov=args.sgd_nesterov)
-    else:  # adam
-        if args.weight_decay == 0:
-            opt = keras.optimizers.Adam(lr)
-        else:
-            opt = tfa.optimizers.AdamW(args.weight_decay, lr)
+            lr = args.init_lr
 
-    metrics = [keras.metrics.SparseCategoricalAccuracy()]
-    # use top-5 accuracy metric with ImageNet and reduced-ImageNet only
-    if args.dataset.endswith("imagenet"):
-        metrics.append(keras.metrics.SparseTopKCategoricalAccuracy(k=5))
+        if args.optimizer.startswith('sgd'):
+            if args.weight_decay == 0:
+                opt = keras.optimizers.SGD(lr, momentum=0.9, nesterov=args.sgd_nesterov)
+            else:
+                opt = tfa.optimizers.SGDW(args.weight_decay, lr, momentum=0.9, nesterov=args.sgd_nesterov)
+        else:  # adam
+            if args.weight_decay == 0:
+                opt = keras.optimizers.Adam(lr)
+            else:
+                opt = tfa.optimizers.AdamW(args.weight_decay, lr)
 
-    if args.l2_reg != 0:
-        for var in model.trainable_variables:
-            model.add_loss(lambda: keras.regularizers.L2(args.l2_reg)(var))
+        metrics = [keras.metrics.SparseCategoricalAccuracy()]
+        # use top-5 accuracy metric with ImageNet and reduced-ImageNet only
+        if args.dataset.endswith("imagenet"):
+            metrics.append(keras.metrics.SparseTopKCategoricalAccuracy(k=5))
 
-    model.compile(opt, loss='sparse_categorical_crossentropy', metrics=metrics)
+        if args.l2_reg != 0:
+            for var in model.trainable_variables:
+                model.add_loss(lambda: keras.regularizers.L2(args.l2_reg)(var))
+
+        model.compile(opt, loss='sparse_categorical_crossentropy', metrics=metrics)
 
     # prepare tensorboard logging
     tb_path = args.job_dir + '/tensorboard'

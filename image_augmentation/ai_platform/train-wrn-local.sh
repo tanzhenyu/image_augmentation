@@ -24,4 +24,3 @@ python3 -m image_augmentation.ai_platform.train_wrn --job-dir=${JOB_DIR} \
     --optimizer ${OPTIMIZER} --init-lr ${INIT_LR} --l2-reg ${L2_REG} \
     --drop-lr-by ${DROP_LR_BY} --drop-lr-every 60 --drop-lr-every 120 --drop-lr-every 160 \
     --sgd-nesterov
-
