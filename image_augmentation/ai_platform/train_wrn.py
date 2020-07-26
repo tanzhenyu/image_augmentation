@@ -190,6 +190,11 @@ def main(args):
     # set level of verbosity
     logging.getLogger("tensorflow").setLevel(args.verbosity)
 
+    # set GPU memory growth to avoid fork cannot allocate memory warning in multi-GPU env
+    gpus = tf.config.experimental.list_physical_devices('GPU')
+    for gpu in gpus:
+        tf.config.experimental.set_memory_growth(gpu, True)
+
     # image input shape is set 32 x 32
     inp_shape = (32, 32, 3)
     # num classes and other pre-processing ops inferred based on given dataset name
