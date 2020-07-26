@@ -14,7 +14,7 @@ from image_augmentation.preprocessing import imagenet_standardization, imagenet_
 from image_augmentation.preprocessing import cifar_standardization, cifar_baseline_augmentation
 from image_augmentation.datasets import reduced_cifar10, reduced_svhn, reduced_imagenet
 from image_augmentation.datasets import cifar10, svhn, imagenet
-from image_augmentation.image import PolicyAugmentation, autoaugment_policy
+from image_augmentation.image import autoaugment_policy, PolicyAugmentation, RandAugment
 
 
 def get_args():
@@ -61,7 +61,19 @@ def get_args():
         default=False,
         const=True,
         action='store_const',
-        help="apply AutoAugment policy for data augmentation on training, off by default (no AutoAugment)")
+        help='apply AutoAugment policy for data augmentation on training, off by default (no AutoAugment)')
+    parser.add_argument(
+        '--rand-augment-n',
+        default=0,
+        type=int,
+        help='apply RandAugment with number of (N) image transforms for data augmentation on training, '
+             'default=0, off (no RandAugment)')
+    parser.add_argument(
+        '--rand-augment-m',
+        default=10,
+        type=int,
+        help='magnitude (M) of applying each image transform for RandAugment, '
+             '(only when using RandAugment) default=10')
     parser.add_argument(
         '--dataset',
         default='cifar10',
@@ -257,6 +269,9 @@ def main(args):
     train_ds = train_ds.shuffle(1000, reshuffle_each_iteration=True).batch(args.batch_size)
     val_ds = val_ds.batch(args.batch_size)
 
+    def augment_map_fn_builder(augmenter):
+        return lambda images, labels: (tf.py_function(augmenter, [images], images.dtype), labels)
+
     # apply AutoAugment (data augmentation) on training pipeline
     if args.auto_augment:
         # ensure AutoAugment policy dataset name always starts with "reduced_"
@@ -264,14 +279,19 @@ def main(args):
         policy = autoaugment_policy(policy_ds_name)
 
         # set hyper parameters to size 16 as input size is 32 x 32
-        augmenter = PolicyAugmentation(policy, translate_max=16, cutout_max_size=16)
-
-        def augment_map_fn(images, labels):
-            augmented_images = tf.py_function(augmenter, [images], images.dtype)
-            return augmented_images, labels
+        auto_augment = PolicyAugmentation(policy, translate_max=16, cutout_max_size=16)
+        augment_map_fn = augment_map_fn_builder(auto_augment)
         train_ds = train_ds.map(augment_map_fn)  # refrain from using AUTOTUNE here, tf.py_func cannot parallel execute
 
-    # prefetch dataset for faster access in case of larger datasets only
+    # apply RandAugment on training pipeline
+    if args.rand_augment_n:
+        rand_augment = RandAugment(args.rand_augment_m, args.rand_augment_n,
+                                   # set hyper parameters to size 16 as input size is 32 x 32
+                                   translate_max=16, cutout_max_size=16)
+        augment_map_fn = augment_map_fn_builder(rand_augment)
+        train_ds = train_ds.map(augment_map_fn)
+
+    # prefetch dataset for faster access in case of larger datasets only (which are not cached)
     if args.dataset in ['svhn', 'imagenet']:
         train_ds = train_ds.prefetch(tf.data.experimental.AUTOTUNE)
         val_ds = val_ds.prefetch(tf.data.experimental.AUTOTUNE)
