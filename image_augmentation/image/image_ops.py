@@ -91,7 +91,8 @@ def solarize(image, threshold, name=None):
 
     Args:
         image: An int or float tensor of shape `[height, width, num_channels]`.
-        threshold: A 0-D int tensor or int value for setting inversion threshold.
+        threshold: A 0-D int / float tensor or int / float value for setting
+            inversion threshold.
         name: An optional string for name of the operation.
 
     Returns:
@@ -105,6 +106,36 @@ def solarize(image, threshold, name=None):
         inverted_image = invert(image)
         solarized_image = tf.where(image < threshold, image, inverted_image)
         return solarized_image
+
+
+@tf.function
+def solarize_add(image, addition=0, threshold=None, name=None):
+    """Adds `addition` intensity to each pixel and inverts the pixels
+    of an `image` above a certain `threshold`.
+
+    Args:
+        image: An int or float tensor of shape `[height, width, num_channels]`.
+        addition: A 0-D int / float tensor or int / float value that is to be
+            added to each pixel.
+        threshold: A 0-D int / float tensor or int / float value for setting
+            inversion threshold. 128 (int) / 0.5 (float) is used by default.
+        name: An optional string for name of the operation.
+
+    Returns:
+        A tensor with same shape and type as that of `image`.
+    """
+    _check_image_dtype(image)
+
+    with tf.name_scope(name or "solarize_add"):
+        if threshold is None:
+            threshold = tf.image.convert_image_dtype(tf.constant(128, tf.uint8), image.dtype)
+
+        added_image = image + addition
+
+        dark, bright = tf.constant(0, tf.uint8), tf.constant(1, tf.uint8)
+        added_image = tf.clip_by_value(added_image, tf.image.convert_image_dtype(dark, image.dtype),
+                                       tf.image.convert_image_dtype(bright, image.dtype))
+        return solarize(added_image, threshold)
 
 
 @tf.function
