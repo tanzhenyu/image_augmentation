@@ -331,46 +331,34 @@ def main(args):
         # any one of the following:
         # - use an SGD optimizer w/ or w/o weight decay (SGDW / SGD) or just Adam
         # - use a callable learning rate schedule for SGDR or not
+        # - use a callable weight decay schedule whenever required
         # - use SGD Nesterov or not
         if args.optimizer == 'sgdr':
             lr = keras.experimental.CosineDecayRestarts(args.init_lr, steps_per_epoch * args.sgdr_t0,
                                                         args.sgdr_t_mul)
+            if args.weight_decay_rate:
+                weight_decay = keras.experimental.CosineDecayRestarts(args.weight_decay_rate * args.init_lr,
+                                                                      steps_per_epoch * args.sgdr_t0, args.sgdr_t_mul)
         elif args.drop_lr_by:
             lr_boundaries = [(steps_per_epoch * epoch) for epoch in sorted(args.drop_lr_every)]
             lr_values = [args.init_lr * (args.drop_lr_by ** idx) for idx in range(len(lr_boundaries) + 1)]
             lr = keras.optimizers.schedules.PiecewiseConstantDecay(lr_boundaries, lr_values)
+            if args.weight_decay_rate:
+                wd_values = [args.weight_decay_rate * lr_val for lr_val in lr_values]
+                weight_decay = keras.optimizers.schedules.PiecewiseConstantDecay(lr_boundaries, wd_values)
         else:
             lr = args.init_lr
-
-        # apply weight decay based on given rate
-        if args.weight_decay_rate:
-            # use a callable weight decay schedule only when lr is callable
-            if hasattr(lr, '__call__'):
-                wd = lambda step: args.weight_decay_rate * lr(step)
-            # else use a fixed value
-            else:
-                wd = args.weight_decay_rate * lr
-        else:
-            wd = 0
+            if args.weight_decay_rate:
+                weight_decay = args.weight_decay_rate * lr
 
         if args.optimizer.startswith('sgd'):
-            if wd:
-                # workaround for callable weight_decay instead of fixed float value
-                if hasattr(wd, '__call__'):
-                    opt = tfa.optimizers.SGDW(lambda: None, lr, momentum=0.9, nesterov=args.sgd_nesterov)
-                    opt.weight_decay = lambda: wd(opt.iterations)
-                else:
-                    opt = tfa.optimizers.SGDW(wd, lr, momentum=0.9, nesterov=args.sgd_nesterov)
+            if args.weight_decay_rate:
+                opt = tfa.optimizers.SGDW(weight_decay, lr, momentum=0.9, nesterov=args.sgd_nesterov)
             else:
                 opt = keras.optimizers.SGD(lr, momentum=0.9, nesterov=args.sgd_nesterov)
         else:  # adam
-            if wd:
-                # workaround for callable weight_decay instead of fixed float value
-                if hasattr(wd, '__call__'):
-                    opt = tfa.optimizers.AdamW(lambda: None, lr, momentum=0.9, nesterov=args.sgd_nesterov)
-                    opt.weight_decay = lambda: wd(opt.iterations)
-                else:
-                    opt = tfa.optimizers.AdamW(wd, lr, momentum=0.9, nesterov=args.sgd_nesterov)
+            if args.weight_decay_rate:
+                opt = tfa.optimizers.AdamW(weight_decay, lr)
             else:
                 opt = keras.optimizers.Adam(lr)
 
