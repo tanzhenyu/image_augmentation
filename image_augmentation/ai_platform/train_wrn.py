@@ -355,12 +355,22 @@ def main(args):
 
         if args.optimizer.startswith('sgd'):
             if wd:
-                opt = tfa.optimizers.SGDW(wd, lr, momentum=0.9, nesterov=args.sgd_nesterov)
+                # workaround for callable weight_decay instead of fixed float value
+                if hasattr(wd, '__call__'):
+                    opt = tfa.optimizers.SGDW(lambda: None, lr, momentum=0.9, nesterov=args.sgd_nesterov)
+                    opt.weight_decay = lambda: wd(opt.iterations)
+                else:
+                    opt = tfa.optimizers.SGDW(wd, lr, momentum=0.9, nesterov=args.sgd_nesterov)
             else:
                 opt = keras.optimizers.SGD(lr, momentum=0.9, nesterov=args.sgd_nesterov)
         else:  # adam
             if wd:
-                opt = tfa.optimizers.AdamW(wd, lr)
+                # workaround for callable weight_decay instead of fixed float value
+                if hasattr(wd, '__call__'):
+                    opt = tfa.optimizers.AdamW(lambda: None, lr, momentum=0.9, nesterov=args.sgd_nesterov)
+                    opt.weight_decay = lambda: wd(opt.iterations)
+                else:
+                    opt = tfa.optimizers.AdamW(wd, lr, momentum=0.9, nesterov=args.sgd_nesterov)
             else:
                 opt = keras.optimizers.Adam(lr)
 
