@@ -139,10 +139,12 @@ def get_args():
         action='store_const',
         help='use Nesterov accelerated gradient with SGD optimizer, by default Nesterov is off')
     parser.add_argument(
-        '--weight-decay',
+        '--weight-decay-rate',
         default=0.0,
         type=float,
-        help='(SGDW) weight decay of training step, default=0.0, off')
+        help='rate of weight decay per training step, note: this '
+             'rate is multiplied by learning rate to compute decay value '
+             'before passing to SGDW / AdamW, default=0.0, off')
     parser.add_argument(
         '--l2-reg',
         default=0.0005,
@@ -340,16 +342,27 @@ def main(args):
         else:
             lr = args.init_lr
 
+        # apply weight decay based on given rate
+        if args.weight_decay_rate:
+            # use a callable weight decay schedule only when lr is callable
+            if hasattr(lr, '__call__'):
+                wd = lambda step: args.weight_decay_rate * lr(step)
+            # else use a fixed value
+            else:
+                wd = args.weight_decay_rate * lr
+        else:
+            wd = 0
+
         if args.optimizer.startswith('sgd'):
-            if args.weight_decay == 0:
+            if wd:
+                opt = tfa.optimizers.SGDW(wd, lr, momentum=0.9, nesterov=args.sgd_nesterov)
+            else:
                 opt = keras.optimizers.SGD(lr, momentum=0.9, nesterov=args.sgd_nesterov)
-            else:
-                opt = tfa.optimizers.SGDW(args.weight_decay, lr, momentum=0.9, nesterov=args.sgd_nesterov)
         else:  # adam
-            if args.weight_decay == 0:
-                opt = keras.optimizers.Adam(lr)
+            if wd:
+                opt = tfa.optimizers.AdamW(wd, lr)
             else:
-                opt = tfa.optimizers.AdamW(args.weight_decay, lr)
+                opt = keras.optimizers.Adam(lr)
 
         metrics = [keras.metrics.SparseCategoricalAccuracy()]
         # use top-5 accuracy metric with ImageNet and reduced-ImageNet only
