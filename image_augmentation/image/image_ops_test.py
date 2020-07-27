@@ -4,7 +4,7 @@ from matplotlib import pyplot as plt
 from PIL import Image, ImageOps, ImageEnhance
 
 from image_augmentation.image.image_ops import invert, solarize, cutout, posterize, equalize, auto_contrast
-from image_augmentation.image.image_ops import sharpness, color, sample_pairing, brightness, contrast
+from image_augmentation.image.image_ops import sharpness, color, sample_pairing, brightness, contrast, solarize_add
 
 
 def _rand_image():
@@ -51,6 +51,24 @@ def test_solarize():
 
     float_image = tf.image.convert_image_dtype(image, tf.float32)
     float_sol_image = solarize(float_image, threshold / 255.)
+    _display_images(float_image, float_sol_image)
+
+    assert tf.reduce_all(sol_image == pil_sol_image)
+
+
+def test_solarize_add():
+    image = _rand_image()
+    addition = 0
+    threshold = 128
+    sol_image = solarize_add(image, addition, threshold)
+
+    pil_image = Image.fromarray(image.numpy())
+    pil_sol_image = np.array(ImageOps.solarize(pil_image, threshold))
+
+    _display_images(image, sol_image)
+
+    float_image = tf.image.convert_image_dtype(image, tf.float32)
+    float_sol_image = solarize_add(float_image, addition / 255., threshold / 255.)
     _display_images(float_image, float_sol_image)
 
     assert tf.reduce_all(sol_image == pil_sol_image)

@@ -109,7 +109,7 @@ def solarize(image, threshold, name=None):
 
 
 @tf.function
-def solarize_add(image, addition=0, threshold=None, name=None):
+def solarize_add(image, addition, threshold=None, name=None):
     """Adds `addition` intensity to each pixel and inverts the pixels
     of an `image` above a certain `threshold`.
 
