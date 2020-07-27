@@ -1,5 +1,5 @@
 # use base image
-FROM tensorflow/tensorflow:2.3.0rc1-gpu
+FROM tensorflow/tensorflow:2.3.0rc2-gpu
 
 # set working directory
 WORKDIR /root
