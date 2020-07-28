@@ -139,10 +139,12 @@ def get_args():
         action='store_const',
         help='use Nesterov accelerated gradient with SGD optimizer, by default Nesterov is off')
     parser.add_argument(
-        '--weight-decay',
+        '--weight-decay-rate',
         default=0.0,
         type=float,
-        help='(SGDW) weight decay of training step, default=0.0, off')
+        help='rate of weight decay per training step, note: this '
+             'rate is multiplied by learning rate to compute decay value '
+             'before passing to SGDW / AdamW, default=0.0, off')
     parser.add_argument(
         '--l2-reg',
         default=0.0005,
@@ -329,27 +331,36 @@ def main(args):
         # any one of the following:
         # - use an SGD optimizer w/ or w/o weight decay (SGDW / SGD) or just Adam
         # - use a callable learning rate schedule for SGDR or not
+        # - use a callable weight decay schedule whenever required
         # - use SGD Nesterov or not
         if args.optimizer == 'sgdr':
             lr = keras.experimental.CosineDecayRestarts(args.init_lr, steps_per_epoch * args.sgdr_t0,
                                                         args.sgdr_t_mul)
+            if args.weight_decay_rate:
+                weight_decay = keras.experimental.CosineDecayRestarts(args.weight_decay_rate * args.init_lr,
+                                                                      steps_per_epoch * args.sgdr_t0, args.sgdr_t_mul)
         elif args.drop_lr_by:
             lr_boundaries = [(steps_per_epoch * epoch) for epoch in sorted(args.drop_lr_every)]
             lr_values = [args.init_lr * (args.drop_lr_by ** idx) for idx in range(len(lr_boundaries) + 1)]
             lr = keras.optimizers.schedules.PiecewiseConstantDecay(lr_boundaries, lr_values)
+            if args.weight_decay_rate:
+                wd_values = [args.weight_decay_rate * lr_val for lr_val in lr_values]
+                weight_decay = keras.optimizers.schedules.PiecewiseConstantDecay(lr_boundaries, wd_values)
         else:
             lr = args.init_lr
+            if args.weight_decay_rate:
+                weight_decay = args.weight_decay_rate * lr
 
         if args.optimizer.startswith('sgd'):
-            if args.weight_decay == 0:
+            if args.weight_decay_rate:
+                opt = tfa.optimizers.SGDW(weight_decay, lr, momentum=0.9, nesterov=args.sgd_nesterov)
+            else:
                 opt = keras.optimizers.SGD(lr, momentum=0.9, nesterov=args.sgd_nesterov)
-            else:
-                opt = tfa.optimizers.SGDW(args.weight_decay, lr, momentum=0.9, nesterov=args.sgd_nesterov)
         else:  # adam
-            if args.weight_decay == 0:
-                opt = keras.optimizers.Adam(lr)
+            if args.weight_decay_rate:
+                opt = tfa.optimizers.AdamW(weight_decay, lr)
             else:
-                opt = tfa.optimizers.AdamW(args.weight_decay, lr)
+                opt = keras.optimizers.Adam(lr)
 
         metrics = [keras.metrics.SparseCategoricalAccuracy()]
         # use top-5 accuracy metric with ImageNet and reduced-ImageNet only

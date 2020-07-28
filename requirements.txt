@@ -1,4 +1,4 @@
 tensorflow==2.3.0rc2
 tensorflow_datasets==3.1.0
-tfa-nightly==0.11.0.dev20200723223438
+tfa-nightly==0.11.0.dev20200728165002
 matplotlib
