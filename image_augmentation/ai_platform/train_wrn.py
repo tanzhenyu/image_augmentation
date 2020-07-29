@@ -15,6 +15,7 @@ from image_augmentation.preprocessing import cifar_standardization, cifar_baseli
 from image_augmentation.datasets import reduced_cifar10, reduced_svhn, reduced_imagenet
 from image_augmentation.datasets import cifar10, svhn, imagenet
 from image_augmentation.image import autoaugment_policy, PolicyAugmentation, RandAugment
+from image_augmentation.callbacks import TensorBoardLRLogger
 
 
 def get_args():
@@ -376,7 +377,9 @@ def main(args):
     # prepare tensorboard logging
     tb_path = args.job_dir + '/tensorboard'
     checkpoint_path = args.job_dir + '/checkpoint'
-    callbacks = [keras.callbacks.TensorBoard(tb_path), keras.callbacks.ModelCheckpoint(checkpoint_path)]
+    callbacks = [keras.callbacks.TensorBoard(tb_path),
+                 keras.callbacks.ModelCheckpoint(checkpoint_path),
+                 TensorBoardLRLogger(tb_path + '/train')]
 
     print("Using tensorboard directory as", tb_path)
 
