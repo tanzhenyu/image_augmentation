@@ -90,7 +90,7 @@ def get_args():
              '(directory for tensorflow_datasets)')
     parser.add_argument(
         '--padding-mode',
-        choices=['zero', 'reflect'],
+        choices=['zeros', 'reflect'],
         default='reflect',
         help='padding mode to be used to pad pixels before cropping, '
              '(applicable only in case of CIFAR, SVHN) default is "reflect"')
