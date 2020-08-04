@@ -274,7 +274,7 @@ def main(args):
             # pixel center of CIFAR10, SVHN require that image samples be supplied
             # (to learn the pixel wise mean)
             if args.normalization == 'pixel_center':
-                images_only = train_ds.map(lambda image, label: image)
+                images_only = train_ds.batch(args.batch_size).map(lambda image, label: image)
                 x = standardize(x, mode='pixel_mean_subtract', data_samples=images_only)
             # rgb normalization uses rescaling using known RGB mean(s) and std(s)
             else:
