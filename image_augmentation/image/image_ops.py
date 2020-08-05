@@ -187,26 +187,23 @@ def equalize(image, name=None):
 
         def equalize_grayscale(image_channel):
             """Equalizes the histogram of a grayscale (2D) image."""
-            current_shape = tf.shape(image_channel)
-
             bins = tf.constant(256, tf.int32)
 
             histogram = tf.math.bincount(image_channel, minlength=bins)
-            num_pixels = tf.reduce_sum(histogram)
-            norm_histogram = tf.cast(histogram, tf.float32) / tf.cast(num_pixels, tf.float32)
+            nonzero = tf.where(tf.math.not_equal(histogram, 0))
+            nonzero_histogram = tf.reshape(tf.gather(histogram, nonzero), [-1])
+            step = (tf.reduce_sum(nonzero_histogram) - nonzero_histogram[-1]) // (bins - 1)
 
-            bins = tf.cast(bins, tf.float32)
+            # use a lut similar to PIL
+            def normalize(histogram, step):
+                norm_histogram = (tf.math.cumsum(histogram) + (step // 2)) // step
+                norm_histogram = tf.concat([[0], norm_histogram], axis=0)
+                norm_histogram = tf.clip_by_value(norm_histogram, 0, bins - 1)
+                return norm_histogram
 
-            cumulative_histogram = tf.math.cumsum(norm_histogram)
-            levels = tf.math.round(cumulative_histogram * (bins - 1))
-            levels = tf.cast(levels, tf.int32)
-
-            flat_image = tf.reshape(image_channel, [tf.reduce_prod(current_shape)])
-            equalized_flat_image = tf.gather(levels, flat_image)
-            equalized_flat_image = tf.cast(equalized_flat_image, tf.int32)
-
-            equalized_image_channel = tf.reshape(equalized_flat_image, current_shape)
-            return equalized_image_channel
+            return tf.cond(tf.math.equal(step, 0),
+                           lambda: image_channel,
+                           lambda: tf.gather(normalize(histogram, step), image_channel))
 
         channels_first_image = tf.transpose(image, [2, 0, 1])
         channels_first_equalized_image = tf.map_fn(equalize_grayscale, channels_first_image)
