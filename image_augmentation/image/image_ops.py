@@ -130,6 +130,7 @@ def solarize_add(image, addition, threshold=None, name=None):
         if threshold is None:
             threshold = tf.image.convert_image_dtype(tf.constant(128, tf.uint8), image.dtype)
 
+        addition = tf.cast(addition, image.dtype)
         added_image = image + addition
 
         dark, bright = tf.constant(0, tf.uint8), tf.constant(255, tf.uint8)

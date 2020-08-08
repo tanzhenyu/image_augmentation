@@ -3,8 +3,8 @@
 import tensorflow as tf
 import tensorflow_addons as tfa
 
-from image_augmentation.image import auto_contrast, invert, equalize, solarize, posterize
-from image_augmentation.image import contrast, color, brightness, sharpness, cutout
+from image_augmentation.image import auto_contrast, invert, equalize, solarize, solarize_add
+from image_augmentation.image import posterize, contrast, color, brightness, sharpness, cutout
 
 
 def convenient_type(tfa_image_fn):
@@ -25,6 +25,7 @@ TRANSFORMS = {
     "Invert": invert,
     "Equalize": equalize,
     "Solarize": solarize,
+    "SolarizeAdd": solarize_add,
     "Posterize": posterize,
     "Contrast": contrast,
     "Color": color,
@@ -258,6 +259,7 @@ def levels_to_args(translate_max_loc=150, rotate_max_deg=30, cutout_max_size=60,
         "Invert": invert_args,
         "Equalize": equalize_args,
         "Solarize": solarize_args,
+        "SolarizeAdd": solarize_args,
         "Posterize": posterize_args,
         "Contrast": contrast_args,
         "Color": color_args,
@@ -383,7 +385,8 @@ class RandAugment:
             or a single image.
     """
 
-    def __init__(self, magnitude, num_layers, translate_max=150, rotate_max_degree=30, cutout_max_size=60, seed=None):
+    def __init__(self, magnitude, num_layers, translate_max=150,
+                 rotate_max_degree=30, cutout_max_size=60, seed=None):
         """Applies data augmentation on image(s) using RandAugment strategy.
 
         Args:
