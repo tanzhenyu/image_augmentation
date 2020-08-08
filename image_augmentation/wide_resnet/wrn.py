@@ -66,7 +66,7 @@ def WideResNet(input_shape, depth=28, k=10, dropout=0.0,
 
     # conv1
     x = Conv2D(16, (3, 3), padding='same', use_bias=False,
-               kernel_initializer=he_normal(), 
+               kernel_initializer=he_normal(),
                name='conv1/conv_3x3')(inp)
 
     # conv2: n blocks
