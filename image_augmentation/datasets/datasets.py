@@ -104,3 +104,13 @@ def reduced_imagenet(data_dir=None):
         "train_ds": train_ds,
         "val_ds": val_ds
     }
+
+
+def large_imagenet(data_dir=None):
+    ds, info = tfds.load('imagenet2012', shuffle_files=True,
+                         as_supervised=True, with_info=True, data_dir=data_dir)
+    return {
+        "train_ds": ds['train'],
+        "val_ds": ds['validation'],
+        "info": info
+    }
