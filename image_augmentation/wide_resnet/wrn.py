@@ -3,7 +3,7 @@
 from tensorflow.keras.layers import Conv2D
 from tensorflow.keras.layers import Activation, BatchNormalization, Add
 from tensorflow.keras.layers import GlobalAveragePooling2D, Dropout, Dense
-from tensorflow.keras.initializers import RandomNormal, he_normal
+from tensorflow.keras.initializers import RandomNormal, HeNormal
 from tensorflow.keras import Input, Model
 
 from tensorflow.keras import backend as K
@@ -27,11 +27,11 @@ def _residual_block(input, num_filters=16, k=1, stride=1,
     init = _relu(name=name + '/relu1')(init)
     if init.shape[CHANNEL_AXIS] != num_filters or name.endswith("block1"):
         branch = Conv2D(num_filters, (1, 1), strides=stride, padding='same',
-                        use_bias=False, kernel_initializer=he_normal(),
+                        use_bias=False, kernel_initializer=HeNormal(),
                         name=name + '/conv_identity_1x1')(init)
 
     x = Conv2D(num_filters, (3, 3), strides=stride, padding='same',
-               use_bias=False, kernel_initializer=he_normal(),
+               use_bias=False, kernel_initializer=HeNormal(),
                name=name + '/conv1_3x3')(init)
 
     if dropout > 0.0:
@@ -40,7 +40,7 @@ def _residual_block(input, num_filters=16, k=1, stride=1,
     x = _batch_norm(name=name + '/bn2')(x)
     x = _relu(name=name + '/relu2')(x)
     x = Conv2D(num_filters, (3, 3), strides=1, padding='same',
-               use_bias=False, kernel_initializer=he_normal(),
+               use_bias=False, kernel_initializer=HeNormal(),
                name=name + '/conv2_3x3')(x)
 
     x = Add(name=name + '/add')([branch, x])
@@ -66,7 +66,7 @@ def WideResNet(input_shape, depth=28, k=10, dropout=0.0,
 
     # conv1
     x = Conv2D(16, (3, 3), padding='same', use_bias=False,
-               kernel_initializer=he_normal(), 
+               kernel_initializer=HeNormal(),
                name='conv1/conv_3x3')(inp)
 
     # conv2: n blocks
@@ -94,7 +94,7 @@ def WideResNet(input_shape, depth=28, k=10, dropout=0.0,
 
     x = GlobalAveragePooling2D(name='avg_pool')(x)
     x = Dense(num_classes, activation='softmax',
-              kernel_initializer=he_normal(), name='preds')(x)
+              kernel_initializer=HeNormal(), name='preds')(x)
 
     net = Model(inp, x, name=name)
     return net

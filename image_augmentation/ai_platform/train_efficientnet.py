@@ -6,6 +6,9 @@ import logging
 import tensorflow as tf
 from tensorflow import keras
 
+from image_augmentation.datasets import large_imagenet
+from image_augmentation.image import PolicyAugmentation, autoaugment_policy, RandAugment
+from image_augmentation.callbacks import TensorBoardLRLogger
 
 def get_args():
     parser = argparse.ArgumentParser(description='Train EfficientNet on ImageNet dataset')
@@ -103,7 +106,7 @@ def get_args():
         type=float,
         help='number of warmup epochs, default=5')
     parser.add_argument(
-        '--l2-reg',
+        '--l2-regularization',
         default=1e-5,
         type=float,
         help='amount of L2 regularization (weight decay rate) to be applied on all weights '
@@ -162,17 +165,96 @@ def main(args):
 
     with strategy.scope():
         model_builder = EFFICIENTNET[args.model_name]['model_builder']
-        efficientnet = model_builder(include_top=True,
+        model = model_builder(include_top=True,
                                      weights=None)
 
         # normalize images using (ImageNet) RGB mean normalization
-        normalization_layer = efficientnet.get_layer('normalization')
+        normalization_layer = model.get_layer('normalization')
         norm_weights = [tf.convert_to_tensor(MEAN_RGB, tf.float32),
                         tf.convert_to_tensor(STDDEV_RGB, tf.float32),
                         tf.convert_to_tensor(0, tf.float32)]
         normalization_layer.set_weights(norm_weights)
 
-        efficientnet.summary()
+        model.summary()
+
+    ds = large_imagenet(args.data_dir)
+    train_ds = ds['train_ds']
+    val_ds = ds['val_ds']
+
+    # shuffle and batch the dataset
+    train_ds = train_ds.shuffle(1024, reshuffle_each_iteration=True).batch(args.train_batch_size)
+    val_ds = val_ds.batch(args.val_batch_size)
+
+    def augment_map_fn_builder(augmenter):
+        return lambda images, labels: (tf.py_function(augmenter, [images], images.dtype), labels)
+
+    # apply AutoAugment (data augmentation) on training pipeline
+    if args.auto_augment:
+        # use EfficientNet's AutoAugment policy
+        policy = autoaugment_policy('imagenet', efficientnet=True)
+
+        # set hyper parameters to appropriate size
+        auto_augment = PolicyAugmentation(policy, translate_max=250, cutout_max_size=100)
+        augment_map_fn = augment_map_fn_builder(auto_augment)
+        train_ds = train_ds.map(augment_map_fn)  # refrain from using AUTOTUNE here, tf.py_func cannot parallel execute
+
+    # apply RandAugment on training pipeline
+    if args.rand_augment_n:
+        rand_augment = RandAugment(args.rand_augment_m, args.rand_augment_n,
+                                   # set hyper parameters to appropriate size
+                                   translate_max=250, cutout_max_size=100)
+        augment_map_fn = augment_map_fn_builder(rand_augment)
+        train_ds = train_ds.map(augment_map_fn)
+
+    # prefetch dataset for faster access
+    train_ds = train_ds.prefetch(tf.data.experimental.AUTOTUNE)
+    val_ds = val_ds.prefetch(tf.data.experimental.AUTOTUNE)
+
+    # calculate steps per epoch for optimizer schedule num steps
+    steps_per_epoch = tf.data.experimental.cardinality(train_ds)
+    steps_per_epoch = steps_per_epoch.numpy()  # helps model optimizer become JSON serializable
+
+    init_lr = args.base_lr * (args.train_batch_size / 256.)
+    lr = init_lr
+
+    with strategy.scope():
+        if args.optimizer == 'rmsprop':
+            opt = keras.optimizers.RMSprop(learning_rate=lr,
+                                           rho=args.optimizer_decay,
+                                           momentum=args.optimizer_momentum)
+        elif args.optimizer == 'sgd':
+            opt = keras.optimizers.SGD(learning_rate=lr,
+                                       momentum=args.optimizer_momentum)
+        else:
+            opt = keras.optimizers.Adam(learning_rate=lr)
+
+        crossentropy_loss = keras.losses.CategoricalCrossentropy(
+            label_smoothing=args.label_smoothing)
+
+        if args.l2_regularization:
+            for var in model.trainable_variables:
+                model.add_loss(lambda: keras.regularizers.L2(
+                    args.l2_regularization)(var))
+
+    metrics = [keras.metrics.SparseCategoricalAccuracy(),
+               keras.metrics.SparseTopKCategoricalAccuracy(k=5)]
+    model.compile(opt, crossentropy_loss, metrics)
+
+    # prepare for tensorboard logging and model checkpoints
+    tb_path = args.job_dir + '/tensorboard'
+    checkpoint_path = args.job_dir + '/checkpoint'
+    callbacks = [keras.callbacks.TensorBoard(tb_path),
+                 keras.callbacks.ModelCheckpoint(checkpoint_path),
+                 TensorBoardLRLogger(tb_path + '/train')]
+    print("Using tensorboard directory as", tb_path)
+
+    # train the model
+    model.fit(train_ds, validation_data=val_ds, epochs=args.epochs, callbacks=callbacks)
+
+    # save keras model
+    save_path = args.job_dir + '/keras_model'
+    keras.models.save_model(model, save_path)
+    print("Model exported to", save_path)
 
 
 if __name__ == '__main__':
