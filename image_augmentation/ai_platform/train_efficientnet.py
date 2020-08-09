@@ -181,10 +181,11 @@ def main(args):
     ds = large_imagenet(args.data_dir)
     train_ds = ds['train_ds']
     val_ds = ds['val_ds']
+    num_classes = ds['info'].features['label'].num_classes
 
     # preprocess the inputs
-    train_preprocess = preprocess_fn_builder(image_size, num_classes=1000, is_training=True)
-    val_preprocess = preprocess_fn_builder(image_size, num_classes=1000, is_training=False)
+    train_preprocess = preprocess_fn_builder(image_size, num_classes, is_training=True)
+    val_preprocess = preprocess_fn_builder(image_size, num_classes, is_training=False)
 
     train_ds.map(train_preprocess, tf.data.experimental.AUTOTUNE)
     val_ds.map(val_preprocess, tf.data.experimental.AUTOTUNE)
