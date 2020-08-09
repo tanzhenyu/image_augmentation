@@ -3,6 +3,7 @@
 import argparse
 import logging
 
+import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 
@@ -173,9 +174,9 @@ def main(args):
 
         # normalize images using (ImageNet) RGB mean normalization
         normalization_layer = model.get_layer('normalization')
-        norm_weights = [tf.convert_to_tensor(MEAN_RGB, tf.float32),
-                        tf.convert_to_tensor(STDDEV_RGB, tf.float32),
-                        tf.convert_to_tensor(0, tf.float32)]
+        norm_weights = [np.array(MEAN_RGB),
+                        np.array(STDDEV_RGB),
+                        np.array(0)]
         normalization_layer.set_weights(norm_weights)
 
         model.summary()
@@ -261,7 +262,7 @@ def main(args):
                     args.l2_regularization)(var))
 
         metrics = [keras.metrics.SparseCategoricalAccuracy(),
-               keras.metrics.SparseTopKCategoricalAccuracy(k=5)]
+                   keras.metrics.SparseTopKCategoricalAccuracy(k=5)]
     model.compile(opt, crossentropy_loss, metrics)
 
     # prepare for tensorboard logging and model checkpoints
