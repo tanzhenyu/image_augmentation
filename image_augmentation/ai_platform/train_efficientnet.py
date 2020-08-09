@@ -10,6 +10,7 @@ from image_augmentation.datasets import large_imagenet
 from image_augmentation.image import PolicyAugmentation, autoaugment_policy, RandAugment
 from image_augmentation.callbacks import TensorBoardLRLogger
 from image_augmentation.preprocessing.efficientnet_preprocess import preprocess_fn_builder
+from image_augmentation.optimizer_schedules import WarmupExponentialDecay
 
 def get_args():
     parser = argparse.ArgumentParser(description='Train EfficientNet on ImageNet dataset')
@@ -224,9 +225,22 @@ def main(args):
     steps_per_epoch = steps_per_epoch.numpy()  # helps model optimizer become JSON serializable
 
     init_lr = args.base_lr * (args.train_batch_size / 256.)
-    lr = init_lr
 
     with strategy.scope():
+        if args.lr_decay_rate:
+            # use a few starting warmup epochs with exponentially decayed LR
+            if args.warmup_epochs:
+                lr = WarmupExponentialDecay(init_lr, steps_per_epoch * args.lr_decay_epochs,
+                                            args.lr_decay_rate, steps_per_epoch * args.warmup_epochs,
+                                            staircase=True)
+            # do not use warmup
+            else:
+                lr = keras.optimizers.schedules.ExponentialDecay(init_lr, steps_per_epoch * args.lr_decay_epochs,
+                                                                 args.lr_decay_rate, staircase=True)
+        # do not use exponential decay
+        else:
+            lr = init_lr
+
         if args.optimizer == 'rmsprop':
             opt = keras.optimizers.RMSprop(learning_rate=lr,
                                            rho=args.optimizer_decay,
