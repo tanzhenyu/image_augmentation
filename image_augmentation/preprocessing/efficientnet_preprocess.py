@@ -11,8 +11,9 @@ RESIZE_METHOD = 'bicubic'
 def _resize(image, image_size):
     """Resizes an image using the Bi-cubic method."""
     target_size = tf.stack([image_size, image_size])
-    return tf.image.resize(image, target_size,
-                           method=RESIZE_METHOD)
+    resized_image = tf.image.resize(image, target_size,
+                                    method=RESIZE_METHOD)
+    return tf.cast(resized_image, image.dtype)
 
 
 @tf.function

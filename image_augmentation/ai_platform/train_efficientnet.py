@@ -182,6 +182,9 @@ def main(args):
     train_ds = ds['train_ds']
     val_ds = ds['val_ds']
 
+    # preprocess the inputs
+
+
     # shuffle and batch the dataset
     train_ds = train_ds.shuffle(1024, reshuffle_each_iteration=True).batch(args.train_batch_size)
     val_ds = val_ds.batch(args.val_batch_size)
