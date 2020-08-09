@@ -9,7 +9,7 @@ from tensorflow import keras
 from image_augmentation.datasets import large_imagenet
 from image_augmentation.image import PolicyAugmentation, autoaugment_policy, RandAugment
 from image_augmentation.callbacks import TensorBoardLRLogger
-
+from image_augmentation.preprocessing.efficientnet_preprocess import preprocess_fn_builder
 
 def get_args():
     parser = argparse.ArgumentParser(description='Train EfficientNet on ImageNet dataset')
@@ -167,7 +167,7 @@ def main(args):
     with strategy.scope():
         model_builder = EFFICIENTNET[args.model_name]['model_builder']
         model = model_builder(include_top=True,
-                                     weights=None)
+                              weights=None)
 
         # normalize images using (ImageNet) RGB mean normalization
         normalization_layer = model.get_layer('normalization')
@@ -183,11 +183,15 @@ def main(args):
     val_ds = ds['val_ds']
 
     # preprocess the inputs
+    train_preprocess = preprocess_fn_builder(image_size, num_classes=1000, is_training=True)
+    val_preprocess = preprocess_fn_builder(image_size, num_classes=1000, is_training=False)
 
+    train_ds.map(train_preprocess, tf.data.experimental.AUTOTUNE)
+    val_ds.map(val_preprocess, tf.data.experimental.AUTOTUNE)
 
     # shuffle and batch the dataset
-    train_ds = train_ds.shuffle(1024, reshuffle_each_iteration=True).batch(args.train_batch_size)
-    val_ds = val_ds.batch(args.val_batch_size)
+    train_ds = train_ds.shuffle(1024, reshuffle_each_iteration=True).batch(args.train_batch_size, drop_remainder=True)
+    val_ds = val_ds.batch(args.val_batch_size, drop_remainder=True)
 
     def augment_map_fn_builder(augmenter):
         return lambda images, labels: (tf.py_function(augmenter, [images], images.dtype), labels)
