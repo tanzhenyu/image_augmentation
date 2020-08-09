@@ -260,7 +260,7 @@ def main(args):
                 model.add_loss(lambda: keras.regularizers.L2(
                     args.l2_regularization)(var))
 
-    metrics = [keras.metrics.SparseCategoricalAccuracy(),
+        metrics = [keras.metrics.SparseCategoricalAccuracy(),
                keras.metrics.SparseTopKCategoricalAccuracy(k=5)]
     model.compile(opt, crossentropy_loss, metrics)
 
