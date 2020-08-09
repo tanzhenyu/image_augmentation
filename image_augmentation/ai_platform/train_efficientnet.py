@@ -12,6 +12,7 @@ from image_augmentation.callbacks import TensorBoardLRLogger
 from image_augmentation.preprocessing.efficientnet_preprocess import preprocess_fn_builder
 from image_augmentation.optimizer_schedules import WarmupExponentialDecay
 
+
 def get_args():
     parser = argparse.ArgumentParser(description='Train EfficientNet on ImageNet dataset')
 
