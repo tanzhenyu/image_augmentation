@@ -10,6 +10,7 @@ from image_augmentation.datasets import large_imagenet
 from image_augmentation.image import PolicyAugmentation, autoaugment_policy, RandAugment
 from image_augmentation.callbacks import TensorBoardLRLogger
 
+
 def get_args():
     parser = argparse.ArgumentParser(description='Train EfficientNet on ImageNet dataset')
 
