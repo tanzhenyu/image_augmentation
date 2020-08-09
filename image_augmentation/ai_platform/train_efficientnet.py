@@ -263,7 +263,7 @@ def main(args):
 
         metrics = [keras.metrics.SparseCategoricalAccuracy(),
                    keras.metrics.SparseTopKCategoricalAccuracy(k=5)]
-    model.compile(opt, crossentropy_loss, metrics)
+        model.compile(opt, crossentropy_loss, metrics)
 
     # prepare for tensorboard logging and model checkpoints
     tb_path = args.job_dir + '/tensorboard'
