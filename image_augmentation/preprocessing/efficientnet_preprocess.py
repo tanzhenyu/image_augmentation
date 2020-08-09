@@ -67,3 +67,17 @@ def random_crop_and_resize(image, image_size=None):
     return resized_image
 
 
+def preprocess_fn_builder(image_size, num_classes, is_training):
+    if is_training:
+        def image_preprocess_fn(image, image_size_):
+            image = random_crop_and_resize(image, image_size_)
+            image = tf.image.flip_left_right(image)
+            return image
+    else:
+        image_preprocess_fn = center_crop_and_resize
+
+    def preprocess_fn(image, label):
+        image = image_preprocess_fn(image, image_size)
+        label = tf.one_hot(label, num_classes)
+        return image, label
+    return preprocess_fn
