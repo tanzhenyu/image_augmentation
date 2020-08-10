@@ -207,7 +207,8 @@ def main(args):
         rand_augment = RandAugment(args.rand_augment_m, args.rand_augment_n,
                                    # set hyper parameters to appropriate size
                                    translate_max=100, cutout_max_size=40)
-        train_ds = train_ds.map(lambda images, labels: (rand_augment(images), labels))
+        train_ds = train_ds.map(lambda images, labels: (rand_augment(images), labels),
+                                tf.data.experimental.AUTOTUNE)
 
     if args.tpu:
         # use float32 image and labels in case of TPU
@@ -215,8 +216,8 @@ def main(args):
         def cast_to_float(images, labels):
             return tf.cast(images, tf.float32), tf.cast(labels, tf.float32)
 
-        train_ds = train_ds.map(cast_to_float)
-        val_ds = val_ds.map(cast_to_float)
+        train_ds = train_ds.map(cast_to_float, tf.data.experimental.AUTOTUNE)
+        val_ds = val_ds.map(cast_to_float, tf.data.experimental.AUTOTUNE)
 
     # prefetch dataset for faster access
     train_ds = train_ds.prefetch(tf.data.experimental.AUTOTUNE)
