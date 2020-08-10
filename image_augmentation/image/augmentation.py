@@ -399,14 +399,13 @@ class PolicyAugmentation:
         return self.apply(images)
 
 
-def get_op_fn_and_args(op_name, level, args):
-    """Obtains the operation and relevant args given `op_name` and `magnitude`."""
-    return TRANSFORMS[op_name], args[op_name](level)
-
-
 def apply_randaugment(image, num_layers, magnitude, args):
     """Applies RandAugment on a single image with given value of `M` and `N`."""
     op_names = list(TRANSFORMS.keys())
+
+    def get_op_fn_and_args(op_name_, magnitude_, args):
+        """Obtains the operation and relevant args given `op_name` and `magnitude`."""
+        return TRANSFORMS[op_name_], args[op_name_](magnitude_)
 
     # select and apply random op(s) on the image sequentially for `num_layers` number of times
     for _ in tf.range(num_layers):
