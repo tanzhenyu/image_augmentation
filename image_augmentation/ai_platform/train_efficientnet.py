@@ -197,26 +197,17 @@ def main(args):
     train_ds = train_ds.shuffle(1024, reshuffle_each_iteration=True).batch(args.train_batch_size, drop_remainder=True)
     val_ds = val_ds.batch(args.val_batch_size, drop_remainder=True)
 
-    def augment_map_fn_builder(augmenter):
-        return lambda images, labels: (tf.py_function(augmenter, [images], images.dtype), labels)
-
     # apply AutoAugment (data augmentation) on training pipeline
     if args.auto_augment:
-        # use EfficientNet's AutoAugment policy
-        policy = autoaugment_policy('imagenet', efficientnet=True)
-
-        # set hyper parameters to appropriate size
-        auto_augment = PolicyAugmentation(policy, translate_max=250, cutout_max_size=100)
-        augment_map_fn = augment_map_fn_builder(auto_augment)
-        train_ds = train_ds.map(augment_map_fn)  # refrain from using AUTOTUNE here, tf.py_func cannot parallel execute
+        raise NotImplementedError("AutoAugment preprocessing have not been implemented for TPUs yet. "
+                                  "Consider using RandAugment preprocessing instead.")
 
     # apply RandAugment on training pipeline
     if args.rand_augment_n:
         rand_augment = RandAugment(args.rand_augment_m, args.rand_augment_n,
                                    # set hyper parameters to appropriate size
-                                   translate_max=250, cutout_max_size=100)
-        augment_map_fn = augment_map_fn_builder(rand_augment)
-        train_ds = train_ds.map(augment_map_fn)
+                                   translate_max=100, cutout_max_size=40)
+        train_ds = train_ds.map(lambda images, labels: (rand_augment(images), labels))
 
     if args.tpu:
         # use float32 image and labels in case of TPU

@@ -462,8 +462,6 @@ class RandAugment:
             seed: An int value for setting seed to ensure deterministic results.
                 Default is `None`.
         """
-        # TODO: update cutout const when using EfficientNet (use 100)
-        # TODO: update translate const when using EfficientNet (use 250)
         self.magnitude = magnitude
         self.num_layers = num_layers
 
