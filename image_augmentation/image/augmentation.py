@@ -7,19 +7,21 @@ from image_augmentation.image import auto_contrast, invert, equalize, solarize, 
 from image_augmentation.image import posterize, contrast, color, brightness, sharpness, cutout
 
 
+# unused function, TODO: report bug to TFA for incorrect `replace` support with float32 images tfa.image.*
 def convenient_type(tfa_image_fn):
     """Convenience function to cast `replace` argument to match image dtype.
     Required for `tfa.image.translate_xy`, `tfa.image.shear_x`, `tfa.image.shear_y`
     function calls.
     """
-    return lambda image, level, replace: tfa_image_fn(image, level, tf.cast(replace, image.dtype))
+    return lambda image, level, replace: tfa_image_fn(
+        image, level, tf.constant(tf.image.convert_image_dtype(tf.cast(replace, tf.uint8), image.dtype)))
 
 
 TRANSFORMS = {
-    "ShearX": convenient_type(tfa.image.shear_x),
-    "ShearY": convenient_type(tfa.image.shear_y),
-    "TranslateX": convenient_type(tfa.image.translate_xy),
-    "TranslateY": convenient_type(tfa.image.translate_xy),
+    "ShearX": tfa.image.shear_x,
+    "ShearY": tfa.image.shear_y,
+    "TranslateX": tfa.image.translate_xy,
+    "TranslateY": tfa.image.translate_xy,
     "Rotate": tfa.image.rotate,
     "AutoContrast": auto_contrast,
     "Invert": invert,
@@ -222,7 +224,7 @@ def levels_to_args(translate_max_loc=150, rotate_max_deg=30, cutout_max_size=60,
     # contrast, color, brightness, sharpness uses the same range
     blend_min_arg, blend_max_arg = 0.1, 1.9
 
-    gray_color = (128, 128, 128)
+    gray_color = 128
 
     def param(level, min_arg, max_arg):
         return (level * (max_arg - min_arg) / max_level) + min_arg
@@ -237,7 +239,7 @@ def levels_to_args(translate_max_loc=150, rotate_max_deg=30, cutout_max_size=60,
         level = param(level, shear_min_arg, shear_max_arg)
         level = randomly_negate(level)
         replace = gray_color
-        return tf.constant(level), tf.constant(replace)
+        return float(level), replace
     shear_x_args = shear_y_args = _shear_args
 
     def _translate_args(level, is_x):
@@ -247,17 +249,17 @@ def levels_to_args(translate_max_loc=150, rotate_max_deg=30, cutout_max_size=60,
 
         # if is_x use for translate x, else for translate y
         if is_x:
-            translate_to = [round(level), 0]
+            translate_to = [int(level), 0]
         else:
-            translate_to = [0, round(level)]
-        return tf.constant(translate_to), tf.constant(replace)
+            translate_to = [0, int(level)]
+        return translate_to, replace
     translate_x_args = lambda level: _translate_args(level, is_x=True)
     translate_y_args = lambda level: _translate_args(level, is_x=False)
 
     def rotate_args(level):
         angle = param(level, rotate_min_arg, rotate_max_arg)
         angle = randomly_negate(angle)
-        return tf.constant(angle),
+        return float(angle),
 
     def _no_args(_):
         return ()
@@ -266,25 +268,24 @@ def levels_to_args(translate_max_loc=150, rotate_max_deg=30, cutout_max_size=60,
 
     def solarize_args(level):
         threshold = param(level, solarize_min_arg, solarize_max_arg)
-        threshold = round(threshold)
-        return tf.constant(threshold),
+        threshold = int(threshold)
+        return threshold,
 
     def posterize_args(level):
         num_bits = param(level, posterize_min_arg, posterize_max_arg)
-        num_bits = round(num_bits)
-        return tf.constant(num_bits),
+        num_bits = int(num_bits)
+        return num_bits,
 
     def _blend_args(level):
         magnitude = param(level, blend_min_arg, blend_max_arg)
-        return tf.constant(magnitude),
+        return float(magnitude),
     # contrast, color, brightness, sharpness uses the same args
     contrast_args = color_args = brightness_args = sharpness_args = _blend_args
 
     def cutout_args(level):
         size = param(level, cutout_min_arg, cutout_max_arg)
-        size = round(size)
-        size = size + 1 if size % 2 != 0 else size
-        return tf.constant(size),
+        size = int(size)
+        return size,
 
     return {
         "ShearX": shear_x_args,
@@ -398,17 +399,24 @@ class PolicyAugmentation:
         return self.apply(images)
 
 
+def get_op_fn_and_args(op_name, level, args):
+    """Obtains the operation and relevant args given `op_name` and `magnitude`."""
+    return TRANSFORMS[op_name], args[op_name](level)
+
+
 def apply_randaugment(image, num_layers, magnitude, args):
     """Applies RandAugment on a single image with given value of `M` and `N`."""
-    def apply_operation(image_, op_name_, level_):
-        return TRANSFORMS[op_name_](image_, *args[op_name_](level_))
     op_names = list(TRANSFORMS.keys())
 
     # select and apply random op(s) on the image sequentially for `num_layers` number of times
     for _ in tf.range(num_layers):
-        op_idx = tf.random.uniform([], 0, len(op_names), dtype=tf.int32)
-        op_name = op_names[op_idx]
-        image = apply_operation(image, op_name, magnitude)
+        draw_op_idx = tf.random.uniform([], 0, len(op_names), dtype=tf.int32)
+        for (idx, op_name) in enumerate(op_names):
+            op_fn, op_arg = get_op_fn_and_args(op_name, magnitude, args)
+            image = tf.cond(idx == draw_op_idx,
+                            lambda selected_op=op_fn, selected_op_arg=op_arg:
+                                selected_op(image, *selected_op_arg),
+                            lambda: image)
     return image
 
 
