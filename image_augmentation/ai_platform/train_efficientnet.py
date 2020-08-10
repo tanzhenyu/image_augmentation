@@ -190,8 +190,8 @@ def main(args):
     train_preprocess = preprocess_fn_builder(image_size, num_classes, is_training=True)
     val_preprocess = preprocess_fn_builder(image_size, num_classes, is_training=False)
 
-    train_ds.map(train_preprocess, tf.data.experimental.AUTOTUNE)
-    val_ds.map(val_preprocess, tf.data.experimental.AUTOTUNE)
+    train_ds = train_ds.map(train_preprocess, tf.data.experimental.AUTOTUNE)
+    val_ds = val_ds.map(val_preprocess, tf.data.experimental.AUTOTUNE)
 
     # shuffle and batch the dataset
     train_ds = train_ds.shuffle(1024, reshuffle_each_iteration=True).batch(args.train_batch_size, drop_remainder=True)
@@ -217,6 +217,15 @@ def main(args):
                                    translate_max=250, cutout_max_size=100)
         augment_map_fn = augment_map_fn_builder(rand_augment)
         train_ds = train_ds.map(augment_map_fn)
+
+    if args.tpu:
+        # use float32 image and labels in case of TPU
+        # (as TPUs do not support uint8 ops)
+        def cast_to_float(images, labels):
+            return tf.cast(images, tf.float32), tf.cast(labels, tf.float32)
+
+        train_ds = train_ds.map(cast_to_float)
+        val_ds = val_ds.map(cast_to_float)
 
     # prefetch dataset for faster access
     train_ds = train_ds.prefetch(tf.data.experimental.AUTOTUNE)
