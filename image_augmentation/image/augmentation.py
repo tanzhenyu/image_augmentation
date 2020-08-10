@@ -401,6 +401,7 @@ class PolicyAugmentation:
 
 def apply_randaugment(image, num_layers, magnitude, args):
     """Applies RandAugment on a single image with given value of `M` and `N`."""
+    image_shape = image.shape
     op_names = list(TRANSFORMS.keys())
 
     def get_op_fn_and_args(op_name_, magnitude_, args):
@@ -409,13 +410,25 @@ def apply_randaugment(image, num_layers, magnitude, args):
 
     # select and apply random op(s) on the image sequentially for `num_layers` number of times
     for _ in tf.range(num_layers):
+        # set shape of image for `tf.while_loop` to prevent (None,) shapes
+        # TODO: check why image op(s) produce None sizes
+        tf.autograph.experimental.set_loop_options(shape_invariants=[
+            (image, image_shape)
+        ])
+
         draw_op_idx = tf.random.uniform([], 0, len(op_names), dtype=tf.int32)
         for (idx, op_name) in enumerate(op_names):
+            # set shape of image for `tf.while_loop` to prevent (None,) shapes
+            tf.autograph.experimental.set_loop_options(shape_invariants=[
+                (image, image_shape)
+            ])
+
             op_fn, op_arg = get_op_fn_and_args(op_name, magnitude, args)
             image = tf.cond(idx == draw_op_idx,
                             lambda selected_op=op_fn, selected_op_arg=op_arg:
                                 selected_op(image, *selected_op_arg),
                             lambda: image)
+            image = tf.ensure_shape(image, image_shape)
     return image
 
 
@@ -466,25 +479,20 @@ class RandAugment:
             tf.random.set_seed(seed)
 
     def apply(self, images):
-        """Applies augmentation on a batch of `images` or on a single image.
+        """Applies augmentation on a batch of `images`.
 
         Args:
-            images: An int or float tensor of shape `[height, width, num_channels]` or
+            images: An int or float tensor of shape
                 `[num_images, height, width, num_channels]`.
 
         Returns:
              A tensor with same shape and type as that of `images`.
         """
-        images = tf.convert_to_tensor(images)
-        is_image_batch = tf.rank(images) == 4
-
         def apply_on_image(image):
             return apply_randaugment(image, self.num_layers, self.magnitude, self.args_level)
 
         # if batch, use map_fn and then apply, else apply directly
-        augmented_images = tf.cond(is_image_batch,
-                                   lambda: tf.map_fn(apply_on_image, images),
-                                   lambda: apply_on_image(images))
+        augmented_images = tf.map_fn(apply_on_image, images)
         return augmented_images
 
     def __call__(self, images):
