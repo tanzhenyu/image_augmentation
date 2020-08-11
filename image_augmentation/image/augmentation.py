@@ -476,6 +476,16 @@ class RandAugment:
         if seed is not None:
             tf.random.set_seed(seed)
 
+    def apply_on_image(self, image):
+        """Applies augmentation on a single `image`.
+        Args:
+            image: An int or float tensor of shape `[height, width, num_channels]`.
+
+        Returns:
+             A tensor with same shape and type as that of `image`.
+        """
+        return apply_randaugment(image, self.num_layers, self.magnitude, self.args_level)
+
     def apply(self, images):
         """Applies augmentation on a batch of `images`.
 
@@ -486,11 +496,8 @@ class RandAugment:
         Returns:
              A tensor with same shape and type as that of `images`.
         """
-        def apply_on_image(image):
-            return apply_randaugment(image, self.num_layers, self.magnitude, self.args_level)
-
         # if batch, use map_fn and then apply, else apply directly
-        augmented_images = tf.map_fn(apply_on_image, images)
+        augmented_images = tf.map_fn(self.apply_on_image, images)
         return augmented_images
 
     def __call__(self, images):

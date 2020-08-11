@@ -8,8 +8,7 @@ import tensorflow as tf
 from tensorflow import keras
 
 from image_augmentation.datasets import large_imagenet
-from image_augmentation.image import PolicyAugmentation, autoaugment_policy, RandAugment
-from image_augmentation.callbacks import TensorBoardLRLogger
+from image_augmentation.image import RandAugment
 from image_augmentation.preprocessing.efficientnet_preprocess import preprocess_fn_builder
 from image_augmentation.optimizer_schedules import WarmupExponentialDecay
 
@@ -193,10 +192,6 @@ def main(args):
     train_ds = train_ds.map(train_preprocess, tf.data.experimental.AUTOTUNE)
     val_ds = val_ds.map(val_preprocess, tf.data.experimental.AUTOTUNE)
 
-    # shuffle and batch the dataset
-    train_ds = train_ds.shuffle(1024, reshuffle_each_iteration=True).batch(args.train_batch_size, drop_remainder=True)
-    val_ds = val_ds.batch(args.val_batch_size, drop_remainder=True)
-
     # apply AutoAugment (data augmentation) on training pipeline
     if args.auto_augment:
         raise NotImplementedError("AutoAugment preprocessing have not been implemented for TPUs yet. "
@@ -207,16 +202,22 @@ def main(args):
         rand_augment = RandAugment(args.rand_augment_m, args.rand_augment_n,
                                    # set hyper parameters to appropriate size
                                    translate_max=100, cutout_max_size=40)
-        train_ds = train_ds.map(lambda images, labels: (rand_augment(images), labels))
+        train_ds = train_ds.map(lambda image, label: (rand_augment.apply_on_image(image), label),
+                                tf.data.experimental.AUTOTUNE)
 
     if args.tpu:
         # use float32 image and labels in case of TPU
         # (as TPUs do not support uint8 ops)
-        def cast_to_float(images, labels):
-            return tf.cast(images, tf.float32), tf.cast(labels, tf.float32)
+        def cast_to_float(image, label):
+            return tf.cast(image, tf.float32), tf.cast(label, tf.float32)
 
-        train_ds = train_ds.map(cast_to_float)
-        val_ds = val_ds.map(cast_to_float)
+        train_ds = train_ds.map(cast_to_float, tf.data.experimental.AUTOTUNE)
+        val_ds = val_ds.map(cast_to_float, tf.data.experimental.AUTOTUNE)
+
+    # shuffle and batch the dataset
+    train_ds = train_ds.shuffle(1024, reshuffle_each_iteration=True).batch(args.train_batch_size,
+                                                                           drop_remainder=True)
+    val_ds = val_ds.batch(args.val_batch_size, drop_remainder=True)
 
     # prefetch dataset for faster access
     train_ds = train_ds.prefetch(tf.data.experimental.AUTOTUNE)
@@ -269,8 +270,7 @@ def main(args):
     tb_path = args.job_dir + '/tensorboard'
     checkpoint_path = args.job_dir + '/checkpoint'
     callbacks = [keras.callbacks.TensorBoard(tb_path),
-                 keras.callbacks.ModelCheckpoint(checkpoint_path),
-                 TensorBoardLRLogger(tb_path + '/train')]
+                 keras.callbacks.ModelCheckpoint(checkpoint_path)]
     print("Using tensorboard directory as", tb_path)
 
     # train the model
