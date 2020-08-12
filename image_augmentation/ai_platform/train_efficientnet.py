@@ -38,10 +38,13 @@ def get_args():
         help='size of each validation batch, default=64')
     parser.add_argument(
         '--model-name',
-        default='efficientnet-b5',
-        choices=['efficientnet-b5', 'efficientnet-b7'],
+        default='efficientnet-b0',
+        choices=['efficientnet-b0', 'efficientnet-b1',
+                 'efficientnet-b2', 'efficientnet-b3',
+                 'efficientnet-b4', 'efficientnet-b5',
+                 'efficientnet-b6', 'efficientnet-b7'],
         type=str,
-        help='EfficientNet architecture that is to be used, default=efficientnet-b5')
+        help='EfficientNet architecture that is to be used, default=efficientnet-b0')
     parser.add_argument(
         '--auto-augment',
         default=False,
@@ -130,15 +133,40 @@ def get_args():
 
 
 EFFICIENTNET = {
+    'efficientnet-b0': {
+        'image_size': 224,
+        'model_builder': keras.applications.efficientnet.EfficientNetB0
+    },
+    'efficientnet-b1': {
+        'image_size': 240,
+        'model_builder': keras.applications.efficientnet.EfficientNetB1
+    },
+    'efficientnet-b2': {
+        'image_size': 260,
+        'model_builder': keras.applications.efficientnet.EfficientNetB2
+    },
+    'efficientnet-b3': {
+        'image_size': 300,
+        'model_builder': keras.applications.efficientnet.EfficientNetB3
+    },
+    'efficientnet-b4': {
+        'image_size': 380,
+        'model_builder': keras.applications.efficientnet.EfficientNetB4
+    },
     'efficientnet-b5': {
         'image_size': 456,
         'model_builder': keras.applications.efficientnet.EfficientNetB5
+    },
+    'efficientnet-b6': {
+        'image_size': 528,
+        'model_builder': keras.applications.efficientnet.EfficientNetB6
     },
     'efficientnet-b7': {
         'image_size': 600,
         'model_builder': keras.applications.efficientnet.EfficientNetB7
     }
 }
+
 MEAN_RGB = [0.485, 0.456, 0.406]
 STDDEV_RGB = [0.229, 0.224, 0.225]
 
