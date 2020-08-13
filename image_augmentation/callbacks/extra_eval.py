@@ -18,7 +18,7 @@ class ExtraValidation(Callback):
 
         scores = self.model.evaluate(self.validation_data, verbose=1)
 
-        with self.writer.as_default():
+        with self.tensorboard_writer.as_default():
             for metric_name, score in zip(metric_names, scores):
                 tf.summary.scalar(metric_name, score, step=epoch)
-        self.writer.flush()
+        self.tensorboard_writer.flush()
