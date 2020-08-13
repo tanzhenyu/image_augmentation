@@ -11,13 +11,14 @@ class ExtraValidation(Callback):
         self.name_prefix = name_prefix
 
         self.tensorboard_writer = tf.summary.create_file_writer(self.tensorboard_path)
-        self.metric_names = ['{}_{}'.format(self.name_prefix, metric.name)
-                             for metric in self.model.metrics]
 
     def on_epoch_end(self, epoch, logs=None):
+        metric_names = ['{}_{}'.format(self.name_prefix, metric.name)
+                        for metric in self.model.metrics]
+
         scores = self.model.evaluate(self.validation_data, verbose=1)
 
         with self.writer.as_default():
-            for metric_name, score in zip(self.metric_names, scores):
+            for metric_name, score in zip(metric_names, scores):
                 tf.summary.scalar(metric_name, score, step=epoch)
         self.writer.flush()
