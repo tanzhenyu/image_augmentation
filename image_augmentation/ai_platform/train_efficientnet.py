@@ -11,6 +11,7 @@ from image_augmentation.datasets import large_imagenet
 from image_augmentation.image import RandAugment
 from image_augmentation.preprocessing.efficientnet_preprocess import preprocess_fn_builder
 from image_augmentation.optimizer_schedules import WarmupExponentialDecay
+from image_augmentation.callbacks import ExtraValidation
 
 
 def get_args():
@@ -118,6 +119,14 @@ def get_args():
         help='amount of L2 regularization (weight decay rate) to be applied on all weights '
              'of the network, default=1e-5')
     parser.add_argument(
+        '--early-stopping',
+        default=False,
+        const=True,
+        action='store_const',
+        help='use early stopping based on mini-val split (if available), '
+             'default=off'
+    )
+    parser.add_argument(
         '--tpu',
         default=None,
         type=str,
@@ -176,7 +185,7 @@ def main(args):
     logging.getLogger("tensorflow").setLevel(args.verbosity)
 
     # display script args
-    print(args)
+    logging.info(str(args))
 
     if args.tpu:
         resolver = tf.distribute.cluster_resolver.TPUClusterResolver(tpu=args.tpu)
@@ -189,10 +198,10 @@ def main(args):
     else:
         # use default distribution strategy
         strategy = tf.distribute.get_strategy()
-    print('Number of available devices: {}'.format(strategy.num_replicas_in_sync))
+    logging.info('Number of available devices: {}'.format(strategy.num_replicas_in_sync))
 
     image_size = EFFICIENTNET[args.model_name]['image_size']
-    print('Using image size: {}'.format(image_size))
+    logging.info('Using image size: {}'.format(image_size))
 
     with strategy.scope():
         model_builder = EFFICIENTNET[args.model_name]['model_builder']
@@ -211,6 +220,9 @@ def main(args):
     ds = large_imagenet(args.data_dir)
     train_ds = ds['train_ds']
     val_ds = ds['val_ds']
+    # use minival split, if available
+    if 'minival_ds' in ds:
+        minival_ds = ds['minival_ds']
     num_classes = ds['info'].features['label'].num_classes
 
     # preprocess the inputs
@@ -219,6 +231,8 @@ def main(args):
 
     train_ds = train_ds.map(train_preprocess, tf.data.experimental.AUTOTUNE)
     val_ds = val_ds.map(val_preprocess, tf.data.experimental.AUTOTUNE)
+    if 'minival_ds' in ds:
+        minival_ds.map(val_preprocess, tf.data.experimental.AUTOTUNE)
 
     # apply AutoAugment (data augmentation) on training pipeline
     if args.auto_augment:
@@ -241,15 +255,23 @@ def main(args):
 
         train_ds = train_ds.map(cast_to_float, tf.data.experimental.AUTOTUNE)
         val_ds = val_ds.map(cast_to_float, tf.data.experimental.AUTOTUNE)
+        if 'minival_ds' in ds:
+            minival_ds.map(cast_to_float, tf.data.experimental.AUTOTUNE)
 
     # shuffle and batch the dataset
     train_ds = train_ds.shuffle(1024, reshuffle_each_iteration=True).batch(args.train_batch_size,
                                                                            drop_remainder=True)
     val_ds = val_ds.batch(args.val_batch_size, drop_remainder=True)
 
+    if 'minival_ds' in ds:
+        minival_ds.batch(args.val_batch_size, drop_remainder=True)
+
     # prefetch dataset for faster access
     train_ds = train_ds.prefetch(tf.data.experimental.AUTOTUNE)
     val_ds = val_ds.prefetch(tf.data.experimental.AUTOTUNE)
+
+    if 'minival_ds' in ds:
+        minival_ds.prefetch(tf.data.experimental.AUTOTUNE)
 
     # calculate steps per epoch for optimizer schedule num steps
     steps_per_epoch = tf.data.experimental.cardinality(train_ds)
@@ -299,15 +321,25 @@ def main(args):
     checkpoint_path = args.job_dir + '/checkpoint'
     callbacks = [keras.callbacks.TensorBoard(tb_path),
                  keras.callbacks.ModelCheckpoint(checkpoint_path)]
-    print("Using tensorboard directory as", tb_path)
+    logging.info("Using tensorboard directory as: %s", tb_path)
+
+    model_val_ds = val_ds
+    if 'minival_ds' in ds:
+        model_val_ds = minival_ds
+        callbacks.append(ExtraValidation(val_ds))
+        # use early stopping with the help of minival split
+        logging.info("Using early stopping.")
+        callbacks.append(keras.callbacks.EarlyStopping(monitor='val_accuracy',
+                                                       min_delta=0.0001,
+                                                       patience=3))
 
     # train the model
-    model.fit(train_ds, validation_data=val_ds, epochs=args.epochs, callbacks=callbacks)
+    model.fit(train_ds, validation_data=model_val_ds, epochs=args.epochs, callbacks=callbacks)
 
     # save keras model
     save_path = args.job_dir + '/keras_model'
     keras.models.save_model(model, save_path)
-    print("Model exported to", save_path)
+    logging.info("Model exported to: %s", save_path)
 
 
 if __name__ == '__main__':
