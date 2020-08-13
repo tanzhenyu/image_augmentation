@@ -222,6 +222,7 @@ def main(args):
     val_ds = ds['val_ds']
     # use minival split, if available
     if 'minival_ds' in ds:
+        logging.info("Using available minival split")
         minival_ds = ds['minival_ds']
     num_classes = ds['info'].features['label'].num_classes
 
@@ -241,6 +242,7 @@ def main(args):
 
     # apply RandAugment on training pipeline
     if args.rand_augment_n:
+        logging.info("Using RandAugment based pre-processing")
         rand_augment = RandAugment(args.rand_augment_m, args.rand_augment_n,
                                    # set hyper parameters to appropriate size
                                    translate_max=100, cutout_max_size=40)
@@ -283,6 +285,7 @@ def main(args):
         if args.lr_decay_rate:
             # use a few starting warmup epochs with exponentially decayed LR
             if args.warmup_epochs:
+                logging.info("Using %d warmup epochs", args.warmup_epochs)
                 lr = WarmupExponentialDecay(init_lr, steps_per_epoch * args.lr_decay_epochs,
                                             args.lr_decay_rate, steps_per_epoch * args.warmup_epochs,
                                             staircase=True)
@@ -328,7 +331,7 @@ def main(args):
         model_val_ds = minival_ds
         callbacks.append(ExtraValidation(val_ds))
         # use early stopping with the help of minival split
-        logging.info("Using early stopping.")
+        logging.info("Using early stopping")
         callbacks.append(keras.callbacks.EarlyStopping(monitor='val_accuracy',
                                                        min_delta=0.0001,
                                                        patience=3))
