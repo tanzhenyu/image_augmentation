@@ -218,13 +218,15 @@ def main(args):
         model.summary()
 
     ds = large_imagenet(args.data_dir)
+    num_classes = ds['info'].features['label'].num_classes
+
     train_ds = ds['train_ds']
     val_ds = ds['val_ds']
-    # use minival split, if available
-    if 'minival_ds' in ds:
+
+    # use a minival split, if available
+    minival_ds = ds['minival_ds'] if 'minival_ds' in ds else None
+    if minival_ds:
         logging.info("Using available minival split")
-        minival_ds = ds['minival_ds']
-    num_classes = ds['info'].features['label'].num_classes
 
     # preprocess the inputs
     train_preprocess = preprocess_fn_builder(image_size, num_classes, is_training=True)
@@ -232,7 +234,7 @@ def main(args):
 
     train_ds = train_ds.map(train_preprocess, tf.data.experimental.AUTOTUNE)
     val_ds = val_ds.map(val_preprocess, tf.data.experimental.AUTOTUNE)
-    if 'minival_ds' in ds:
+    if minival_ds:
         minival_ds = minival_ds.map(val_preprocess, tf.data.experimental.AUTOTUNE)
 
     # apply AutoAugment (data augmentation) on training pipeline
@@ -257,7 +259,7 @@ def main(args):
 
         train_ds = train_ds.map(cast_to_float, tf.data.experimental.AUTOTUNE)
         val_ds = val_ds.map(cast_to_float, tf.data.experimental.AUTOTUNE)
-        if 'minival_ds' in ds:
+        if minival_ds:
             minival_ds = minival_ds.map(cast_to_float, tf.data.experimental.AUTOTUNE)
 
     # shuffle and batch the dataset
@@ -265,14 +267,14 @@ def main(args):
                                                                            drop_remainder=True)
     val_ds = val_ds.batch(args.val_batch_size, drop_remainder=True)
 
-    if 'minival_ds' in ds:
+    if minival_ds:
         minival_ds = minival_ds.batch(args.val_batch_size, drop_remainder=True)
 
     # prefetch dataset for faster access
     train_ds = train_ds.prefetch(tf.data.experimental.AUTOTUNE)
     val_ds = val_ds.prefetch(tf.data.experimental.AUTOTUNE)
 
-    if 'minival_ds' in ds:
+    if minival_ds:
         minival_ds = minival_ds.prefetch(tf.data.experimental.AUTOTUNE)
 
     # calculate steps per epoch for optimizer schedule num steps
@@ -326,17 +328,19 @@ def main(args):
                  keras.callbacks.ModelCheckpoint(checkpoint_path)]
     logging.info("Using tensorboard directory as: %s", tb_path)
 
-    model_val_ds = val_ds
-    if 'minival_ds' in ds:
+    if minival_ds:
         model_val_ds = minival_ds
-        callbacks.append(ExtraValidation(val_ds))
+        prefix = 'ilsvrc2012_val'
+        callbacks.append(ExtraValidation(val_ds, '{}/{}'.format(tb_path, prefix), prefix))
 
+        # use early stopping with the help of minival split
         if args.early_stopping:
-            # use early stopping with the help of minival split
             logging.info("Using early stopping")
-            callbacks.append(keras.callbacks.EarlyStopping(monitor='val_accuracy',
+            callbacks.append(keras.callbacks.EarlyStopping(monitor='val_categorical_accuracy',
                                                            min_delta=0.0001,
                                                            patience=3))
+    else:
+        model_val_ds = val_ds
 
     # train the model
     model.fit(train_ds, validation_data=model_val_ds, epochs=args.epochs, callbacks=callbacks)
