@@ -109,8 +109,13 @@ def reduced_imagenet(data_dir=None):
 def large_imagenet(data_dir=None):
     ds, info = tfds.load('imagenet2012', shuffle_files=True,
                          as_supervised=True, with_info=True, data_dir=data_dir)
-    return {
+    ds_dict = {
         "train_ds": ds['train'],
         "val_ds": ds['validation'],
         "info": info
     }
+
+    if 'minival' in info.splits:
+        ds_dict['minival_ds'] = ds['minival']
+
+    return ds_dict

@@ -1,4 +1,4 @@
 tensorflow==2.3.0
-tensorflow_datasets==3.1.0
+git+https://github.com/swghosh/tensorflow-datasets.git
 tfa-nightly==0.11.0.dev20200728165002
 matplotlib
