@@ -330,11 +330,13 @@ def main(args):
     if 'minival_ds' in ds:
         model_val_ds = minival_ds
         callbacks.append(ExtraValidation(val_ds))
-        # use early stopping with the help of minival split
-        logging.info("Using early stopping")
-        callbacks.append(keras.callbacks.EarlyStopping(monitor='val_accuracy',
-                                                       min_delta=0.0001,
-                                                       patience=3))
+
+        if args.early_stopping:
+            # use early stopping with the help of minival split
+            logging.info("Using early stopping")
+            callbacks.append(keras.callbacks.EarlyStopping(monitor='val_accuracy',
+                                                           min_delta=0.0001,
+                                                           patience=3))
 
     # train the model
     model.fit(train_ds, validation_data=model_val_ds, epochs=args.epochs, callbacks=callbacks)
