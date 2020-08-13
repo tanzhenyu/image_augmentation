@@ -109,9 +109,9 @@ def get_args():
         help='number of epochs to wait before each exponential decay, default=10')
     parser.add_argument(
         '--warmup-epochs',
-        default=5,
+        default=5.,
         type=float,
-        help='number of warmup epochs, default=5')
+        help='number of warmup epochs, default=5.')
     parser.add_argument(
         '--l2-regularization',
         default=1e-5,
@@ -288,12 +288,12 @@ def main(args):
             # use a few starting warmup epochs with exponentially decayed LR
             if args.warmup_epochs:
                 logging.info("Using %d warmup epochs", args.warmup_epochs)
-                lr = WarmupExponentialDecay(init_lr, steps_per_epoch * args.lr_decay_epochs,
-                                            args.lr_decay_rate, steps_per_epoch * args.warmup_epochs,
+                lr = WarmupExponentialDecay(init_lr, int(steps_per_epoch * args.lr_decay_epochs),
+                                            args.lr_decay_rate, int(steps_per_epoch * args.warmup_epochs),
                                             staircase=True)
             # do not use warmup
             else:
-                lr = keras.optimizers.schedules.ExponentialDecay(init_lr, steps_per_epoch * args.lr_decay_epochs,
+                lr = keras.optimizers.schedules.ExponentialDecay(init_lr, int(steps_per_epoch * args.lr_decay_epochs),
                                                                  args.lr_decay_rate, staircase=True)
         # do not use exponential decay
         else:
@@ -331,14 +331,16 @@ def main(args):
     if minival_ds:
         model_val_ds = minival_ds
         prefix = 'ilsvrc2012_val'
-        callbacks.append(ExtraValidation(val_ds, '{}/{}'.format(tb_path, prefix), prefix))
+        callbacks.append(ExtraValidation(val_ds, '{}/{}'.format(tb_path, prefix)))
 
         # use early stopping with the help of minival split
         if args.early_stopping:
             logging.info("Using early stopping")
             callbacks.append(keras.callbacks.EarlyStopping(monitor='val_categorical_accuracy',
                                                            min_delta=0.0001,
-                                                           patience=3))
+                                                           patience=3,
+                                                           verbose=1,
+                                                           mode='max'))
     else:
         model_val_ds = val_ds
 

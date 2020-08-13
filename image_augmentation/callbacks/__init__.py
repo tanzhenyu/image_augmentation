@@ -1,3 +1,2 @@
 from image_augmentation.callbacks.lr_logger import TensorBoardLRLogger
 from image_augmentation.callbacks.extra_eval import ExtraValidation
-
