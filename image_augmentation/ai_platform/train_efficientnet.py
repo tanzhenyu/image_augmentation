@@ -233,7 +233,7 @@ def main(args):
     train_ds = train_ds.map(train_preprocess, tf.data.experimental.AUTOTUNE)
     val_ds = val_ds.map(val_preprocess, tf.data.experimental.AUTOTUNE)
     if 'minival_ds' in ds:
-        minival_ds.map(val_preprocess, tf.data.experimental.AUTOTUNE)
+        minival_ds = minival_ds.map(val_preprocess, tf.data.experimental.AUTOTUNE)
 
     # apply AutoAugment (data augmentation) on training pipeline
     if args.auto_augment:
@@ -258,7 +258,7 @@ def main(args):
         train_ds = train_ds.map(cast_to_float, tf.data.experimental.AUTOTUNE)
         val_ds = val_ds.map(cast_to_float, tf.data.experimental.AUTOTUNE)
         if 'minival_ds' in ds:
-            minival_ds.map(cast_to_float, tf.data.experimental.AUTOTUNE)
+            minival_ds = minival_ds.map(cast_to_float, tf.data.experimental.AUTOTUNE)
 
     # shuffle and batch the dataset
     train_ds = train_ds.shuffle(1024, reshuffle_each_iteration=True).batch(args.train_batch_size,
@@ -266,14 +266,14 @@ def main(args):
     val_ds = val_ds.batch(args.val_batch_size, drop_remainder=True)
 
     if 'minival_ds' in ds:
-        minival_ds.batch(args.val_batch_size, drop_remainder=True)
+        minival_ds = minival_ds.batch(args.val_batch_size, drop_remainder=True)
 
     # prefetch dataset for faster access
     train_ds = train_ds.prefetch(tf.data.experimental.AUTOTUNE)
     val_ds = val_ds.prefetch(tf.data.experimental.AUTOTUNE)
 
     if 'minival_ds' in ds:
-        minival_ds.prefetch(tf.data.experimental.AUTOTUNE)
+        minival_ds = minival_ds.prefetch(tf.data.experimental.AUTOTUNE)
 
     # calculate steps per epoch for optimizer schedule num steps
     steps_per_epoch = tf.data.experimental.cardinality(train_ds)
