@@ -302,7 +302,8 @@ def main(args):
         if args.optimizer == 'rmsprop':
             opt = keras.optimizers.RMSprop(learning_rate=lr,
                                            rho=args.optimizer_decay,
-                                           momentum=args.optimizer_momentum)
+                                           momentum=args.optimizer_momentum,
+                                           epsilon=0.001)
         elif args.optimizer == 'sgd':
             opt = keras.optimizers.SGD(learning_rate=lr,
                                        momentum=args.optimizer_momentum)
@@ -312,10 +313,13 @@ def main(args):
         crossentropy_loss = keras.losses.CategoricalCrossentropy(
             label_smoothing=args.label_smoothing)
 
+        # use L2 loss
         if args.l2_regularization:
             for var in model.trainable_variables:
-                model.add_loss(lambda: keras.regularizers.L2(
-                    args.l2_regularization)(var))
+                # skip decay for BatchNormalization vars
+                if 'bn' not in var.name:
+                    model.add_loss(lambda: keras.regularizers.L2(
+                        args.l2_regularization)(var))
 
         metrics = [keras.metrics.CategoricalAccuracy(),
                    keras.metrics.TopKCategoricalAccuracy(k=5)]
