@@ -2,3 +2,4 @@ tensorflow==2.3.0
 tensorflow-datasets @ git+https://github.com/swghosh/tensorflow-datasets.git@a0c150e54e76495de2e565c81e19e5dfae76fa2d
 tfa-nightly==0.11.0.dev20200728165002
 matplotlib
+keras-telegram-bot @ git+https://github.com/swghosh/keras-telegram-bot.git

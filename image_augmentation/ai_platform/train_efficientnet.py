@@ -133,6 +133,20 @@ def get_args():
         help='the gRPC URL of the TPU that is to be used, default=None (TPU not used)'
     )
     parser.add_argument(
+        '--telegram-bot-token',
+        default=None,
+        type=str,
+        help='API token for Telegram bot when using Keras callback '
+             'from https://github.com/swghosh/keras-telegram-bot, default=off'
+    )
+    parser.add_argument(
+        '--telegram-user-id',
+        default=None,
+        type=int,
+        help='User ID to send training metrics to, when using Keras callback '
+             'https://github.com/swghosh/keras-telegram-bot, default=off'
+    )
+    parser.add_argument(
         '--verbosity',
         choices=['DEBUG', 'ERROR', 'FATAL', 'INFO', 'WARN'],
         default='INFO')
@@ -347,6 +361,11 @@ def main(args):
                                                            mode='max'))
     else:
         model_val_ds = val_ds
+
+    if args.telegram_bot_token:
+        from keras_telegram_bot import KerasTelegramBot
+        callbacks.append(KerasTelegramBot(args.telegram_bot_token,
+                                          args.telegram_user_id))
 
     # train the model
     model.fit(train_ds, validation_data=model_val_ds, epochs=args.epochs, callbacks=callbacks)
