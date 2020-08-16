@@ -149,12 +149,6 @@ def get_args():
         help='User ID to send training metrics to, when using Keras callback '
              'https://github.com/swghosh/keras-telegram-bot, default=off')
     parser.add_argument(
-        '--resume-checkpoint-path',
-        default=None,
-        type=str,
-        help='path to resume checkpoint weights '
-             'in order to resume training, default=off')
-    parser.add_argument(
         '--verbosity',
         choices=['DEBUG', 'ERROR', 'FATAL', 'INFO', 'WARN'],
         default='INFO')
@@ -377,7 +371,8 @@ def main(args):
 
     initial_epoch = 0
     if args.resume_training_from:
-        model.load_weights(args.resume_checkpoint_path)
+        with strategy.scope():
+            model.load_weights(checkpoint_path + "/variables/variables")
         initial_epoch = args.resume_training_from
 
         # set optimizer step based on respective epoch
