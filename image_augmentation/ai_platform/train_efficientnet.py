@@ -124,28 +124,30 @@ def get_args():
         const=True,
         action='store_const',
         help='use early stopping based on mini-val split (if available), '
-             'default=off'
-    )
+             'default=off')
     parser.add_argument(
         '--tpu',
         default=None,
         type=str,
-        help='the gRPC URL of the TPU that is to be used, default=None (TPU not used)'
-    )
+        help='the gRPC URL of the TPU that is to be used, default=None (TPU not used)')
+    parser.add_argument(
+        '--resume-training-from',
+        default=None,
+        type=int,
+        help='number of epochs to resume training from '
+             '(will load weights from an earlier checkpoint), default=off')
     parser.add_argument(
         '--telegram-bot-token',
         default=None,
         type=str,
         help='API token for Telegram bot when using Keras callback '
-             'from https://github.com/swghosh/keras-telegram-bot, default=off'
-    )
+             'from https://github.com/swghosh/keras-telegram-bot, default=off')
     parser.add_argument(
         '--telegram-user-id',
         default=None,
         type=int,
         help='User ID to send training metrics to, when using Keras callback '
-             'https://github.com/swghosh/keras-telegram-bot, default=off'
-    )
+             'https://github.com/swghosh/keras-telegram-bot, default=off')
     parser.add_argument(
         '--verbosity',
         choices=['DEBUG', 'ERROR', 'FATAL', 'INFO', 'WARN'],
@@ -367,8 +369,19 @@ def main(args):
         callbacks.append(KerasTelegramBot(args.telegram_bot_token,
                                           args.telegram_user_id))
 
+    initial_epoch = 0
+    if args.resume_training_from:
+        model.load_weights(checkpoint_path)
+        initial_epoch = args.resume_training_from
+
+        # set optimizer step based on respective epoch
+        with strategy.scope():
+            model.optimizer.iterations.assign(initial_epoch * steps_per_epoch)
+
     # train the model
-    model.fit(train_ds, validation_data=model_val_ds, epochs=args.epochs, callbacks=callbacks)
+    model.fit(train_ds, validation_data=model_val_ds,
+              epochs=args.epochs, initial_epoch=initial_epoch,
+              callbacks=callbacks)
 
     # save keras model
     save_path = args.job_dir + '/keras_model'
