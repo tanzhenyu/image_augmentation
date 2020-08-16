@@ -124,21 +124,18 @@ def get_args():
         const=True,
         action='store_const',
         help='use early stopping based on mini-val split (if available), '
-             'default=off'
-    )
+             'default=off')
     parser.add_argument(
         '--tpu',
         default=None,
         type=str,
-        help='the gRPC URL of the TPU that is to be used, default=None (TPU not used)'
-    )
+        help='the gRPC URL of the TPU that is to be used, default=None (TPU not used)')
     parser.add_argument(
         '--resume-training-from',
         default=None,
         type=int,
         help='number of epochs to resume training from '
-             '(will load weights from an earlier checkpoint), default=off'
-    )
+             '(will load weights from an earlier checkpoint), default=off')
     parser.add_argument(
         '--verbosity',
         choices=['DEBUG', 'ERROR', 'FATAL', 'INFO', 'WARN'],
