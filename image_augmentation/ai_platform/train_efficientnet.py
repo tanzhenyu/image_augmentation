@@ -321,7 +321,7 @@ def main(args):
         if args.l2_regularization:
             for var in model.trainable_variables:
                 model.add_loss(lambda: keras.regularizers.L2(
-                    args.l2_regularization)(var))
+                    args.l2_regularization / 2.)(var))  # as, tf.nn.l2_loss(rate) == keras.regularizers.L2(rate / 2)
 
         metrics = [keras.metrics.CategoricalAccuracy(),
                    keras.metrics.TopKCategoricalAccuracy(k=5)]
