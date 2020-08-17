@@ -316,10 +316,8 @@ def main(args):
         # use L2 loss
         if args.l2_regularization:
             for var in model.trainable_variables:
-                # skip decay for BatchNormalization vars
-                if 'bn' not in var.name:
-                    model.add_loss(lambda: keras.regularizers.L2(
-                        args.l2_regularization)(var))
+                model.add_loss(lambda: keras.regularizers.L2(
+                    args.l2_regularization)(var))
 
         metrics = [keras.metrics.CategoricalAccuracy(),
                    keras.metrics.TopKCategoricalAccuracy(k=5)]
