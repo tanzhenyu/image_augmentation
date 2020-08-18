@@ -17,12 +17,12 @@ def _resize(image, image_size):
 
 
 @tf.function
-def center_crop_and_resize(image, image_size=None):
+def center_crop_and_resize(serialized_image, image_size=None):
     """Center crop (with padding) an image and resize it."""
     if image_size is None:
         image_size = IMAGE_SIZE
 
-    image_shape = tf.shape(image)
+    image_shape = tf.image.extract_jpeg_shape(serialized_image)
     image_height, image_width = image_shape[0], image_shape[1]
 
     padded_center_crop_size = tf.cast(
@@ -32,20 +32,20 @@ def center_crop_and_resize(image, image_size=None):
     offset_height = ((image_height - padded_center_crop_size) + 1) // 2
     offset_width = ((image_width - padded_center_crop_size) + 1) // 2
 
-    cropped_image = tf.image.crop_to_bounding_box(image, offset_height,
-                                                  offset_width, padded_center_crop_size,
-                                                  padded_center_crop_size)
+    crop_window = tf.stack([offset_height, offset_width,
+                            padded_center_crop_size, padded_center_crop_size])
+    cropped_image = tf.image.decode_and_crop_jpeg(serialized_image, crop_window, channels=3)
     resized_image = _resize(cropped_image, image_size)
     return resized_image
 
 
 @tf.function
-def random_crop_and_resize(image, image_size=None):
+def random_crop_and_resize(serialized_image, image_size=None):
     """Randomly crops an image and resizes it."""
     if image_size is None:
         image_size = IMAGE_SIZE
 
-    original_shape = tf.shape(image)
+    original_shape = tf.image.extract_jpeg_shape(serialized_image)
     bbox = tf.constant([0.0, 0.0, 1.0, 1.0], dtype=tf.float32, shape=[1, 1, 4])
     bbox_begin, bbox_size, _ = tf.image.sample_distorted_bounding_box(
         original_shape, bbox, min_object_covered=0.1, aspect_ratio_range=(3. / 4, 4. / 3.),
@@ -53,9 +53,8 @@ def random_crop_and_resize(image, image_size=None):
 
     offset_y, offset_x, _ = tf.unstack(bbox_begin)
     target_height, target_width, _ = tf.unstack(bbox_size)
-    cropped_image = tf.image.crop_to_bounding_box(image, offset_y,
-                                                  offset_x, target_height,
-                                                  target_width)
+    crop_window = tf.stack([offset_y, offset_x, target_height, target_width])
+    cropped_image = tf.image.decode_and_crop_jpeg(serialized_image, crop_window, channels=3)
 
     cropped_shape = tf.shape(cropped_image)
     match = tf.equal(original_shape, cropped_shape)
@@ -63,8 +62,8 @@ def random_crop_and_resize(image, image_size=None):
     is_bad_crop = tf.math.greater_equal(tf.reduce_sum(match), 3)
 
     resized_image = tf.cond(is_bad_crop,
-                            lambda: center_crop_and_resize(image, image_size),
-                            lambda: _resize(image, image_size))
+                            lambda: center_crop_and_resize(serialized_image, image_size),
+                            lambda: _resize(cropped_image, image_size))
     return resized_image
 
 
