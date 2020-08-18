@@ -33,7 +33,7 @@ def get_args():
         help='size of each training batch, default=2048')
     parser.add_argument(
         '--val-batch-size',
-        default=64,
+        default=1000,
         type=int,
         help='size of each validation batch, default=64')
     parser.add_argument(
