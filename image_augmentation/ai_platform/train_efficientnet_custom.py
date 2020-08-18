@@ -118,13 +118,6 @@ def get_args():
         help='amount of L2 regularization (weight decay rate) to be applied on all weights '
              'of the network, default=1e-5')
     parser.add_argument(
-        '--early-stopping',
-        default=False,
-        const=True,
-        action='store_const',
-        help='use early stopping based on mini-val split (if available), '
-             'default=off')
-    parser.add_argument(
         '--tpu',
         default=None,
         type=str,
