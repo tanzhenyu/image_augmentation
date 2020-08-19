@@ -253,11 +253,9 @@ def main(args):
     val_ds = val_ds.batch(args.val_batch_size, drop_remainder=True)
 
     # prefetch dataset for faster access
-    # train_ds = train_ds.prefetch(tf.data.experimental.AUTOTUNE)
-    # minival_ds = minival_ds.prefetch(tf.data.experimental.AUTOTUNE)
-    # val_ds = val_ds.prefetch(tf.data.experimental.AUTOTUNE)
-    # TODO: use tfds.load with skip_prefetch as soon as TFDS#2318 merges
-    # prefetching a dataset twice will never yield samples!!
+    train_ds = train_ds.prefetch(tf.data.experimental.AUTOTUNE)
+    minival_ds = minival_ds.prefetch(tf.data.experimental.AUTOTUNE)
+    val_ds = val_ds.prefetch(tf.data.experimental.AUTOTUNE)
 
     # calculate steps per epoch for optimizer schedule num steps
     steps_per_epoch = tf.data.experimental.cardinality(train_ds)

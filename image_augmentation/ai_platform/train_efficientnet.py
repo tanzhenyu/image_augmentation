@@ -274,13 +274,12 @@ def main(args):
     if minival_ds:
         minival_ds = minival_ds.batch(args.val_batch_size, drop_remainder=True)
 
-    # TODO: wait for TFDS#2318 to merge
     # prefetch dataset for faster access
-    # train_ds = train_ds.prefetch(tf.data.experimental.AUTOTUNE)
-    # val_ds = val_ds.prefetch(tf.data.experimental.AUTOTUNE)
+    train_ds = train_ds.prefetch(tf.data.experimental.AUTOTUNE)
+    val_ds = val_ds.prefetch(tf.data.experimental.AUTOTUNE)
 
-    # if minival_ds:
-        # minival_ds = minival_ds.prefetch(tf.data.experimental.AUTOTUNE)
+    if minival_ds:
+        minival_ds = minival_ds.prefetch(tf.data.experimental.AUTOTUNE)
 
     # calculate steps per epoch for optimizer schedule num steps
     steps_per_epoch = tf.data.experimental.cardinality(train_ds)
