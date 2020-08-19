@@ -233,7 +233,7 @@ def main(args):
 
     # apply RandAugment on training pipeline
     if args.rand_augment_n:
-        loggin.info("Using RandAugment based pre-processing")
+        logging.info("Using RandAugment based pre-processing")
         rand_augment = RandAugment(args.rand_augment_m, args.rand_augment_n,
                                    # set hyper parameters to appropriate size
                                    translate_max=100, cutout_max_size=40)
