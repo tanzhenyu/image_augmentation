@@ -17,7 +17,8 @@ REDUCED_IMAGENET_VAL_SIZE = 1200
 
 
 def cifar10(data_dir=None):
-    ds, info = tfds.load('cifar10', as_supervised=True, with_info=True, data_dir=data_dir)
+    ds, info = tfds.load('cifar10', read_config=tfds.ReadConfig(skip_prefetch=True),
+                         as_supervised=True, with_info=True, data_dir=data_dir)
     return {
         "train_ds": ds['train'],
         "test_ds": ds['test'],
@@ -26,7 +27,8 @@ def cifar10(data_dir=None):
 
 
 def svhn(data_dir=None):
-    ds, info = tfds.load('svhn_cropped', as_supervised=True, with_info=True, data_dir=data_dir)
+    ds, info = tfds.load('svhn_cropped', read_config=tfds.ReadConfig(skip_prefetch=True),
+                         as_supervised=True, with_info=True, data_dir=data_dir)
     return {
         "train_ds": ds['train'],
         "test_ds": ds['test'],
@@ -35,7 +37,8 @@ def svhn(data_dir=None):
 
 
 def reduced_cifar10(data_dir=None):
-    ds = tfds.load('cifar10', as_supervised=True, data_dir=data_dir)
+    ds = tfds.load('cifar10', read_config=tfds.ReadConfig(skip_prefetch=True),
+                   as_supervised=True, data_dir=data_dir)
     n_train = tf.data.experimental.cardinality(ds['train'])
 
     ds = ds['train'].shuffle(n_train, seed=SEED)
@@ -50,6 +53,7 @@ def reduced_cifar10(data_dir=None):
 
 def imagenet(data_dir=None):
     ds, info = tfds.load('imagenet_resized/32x32', shuffle_files=True,
+                         read_config=tfds.ReadConfig(skip_prefetch=True),
                          as_supervised=True, with_info=True, data_dir=data_dir)
     return {
         "train_ds": ds['train'],
@@ -59,7 +63,8 @@ def imagenet(data_dir=None):
 
 
 def reduced_svhn(data_dir=None):
-    ds = tfds.load('svhn_cropped', as_supervised=True, data_dir=data_dir)
+    ds = tfds.load('svhn_cropped', read_config=tfds.ReadConfig(skip_prefetch=True),
+                   as_supervised=True, data_dir=data_dir)
     n_train = tf.data.experimental.cardinality(ds['train'])
 
     ds = ds['train'].shuffle(n_train, seed=SEED)
@@ -74,6 +79,7 @@ def reduced_svhn(data_dir=None):
 
 def reduced_imagenet(data_dir=None):
     ds, info = tfds.load("imagenet_resized/32x32", shuffle_files=True,
+                         read_config=tfds.ReadConfig(skip_prefetch=True),
                          as_supervised=True, with_info=True, data_dir=data_dir)
 
     actual_num_classes = info.features['label'].num_classes
