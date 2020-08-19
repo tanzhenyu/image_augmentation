@@ -175,7 +175,7 @@ def main(args):
     logging.getLogger("tensorflow").setLevel(args.verbosity)
 
     # display script args
-    logging.info(str(args))
+    print("Arguments:", args)
 
     if args.tpu:
         resolver = tf.distribute.cluster_resolver.TPUClusterResolver(tpu=args.tpu)
@@ -188,10 +188,10 @@ def main(args):
     else:
         # use default distribution strategy
         strategy = tf.distribute.get_strategy()
-    logging.info('Number of available devices: {}'.format(strategy.num_replicas_in_sync))
+    print('Number of available devices: {}'.format(strategy.num_replicas_in_sync))
 
     image_size = EFFICIENTNET[args.model_name]['image_size']
-    logging.info('Using image size: {}'.format(image_size))
+    print('Using image size: {}'.format(image_size))
 
     with strategy.scope():
         model_builder = EFFICIENTNET[args.model_name]['model_builder']
@@ -229,7 +229,7 @@ def main(args):
 
     # apply RandAugment on training pipeline
     if args.rand_augment_n:
-        logging.info("Using RandAugment based pre-processing")
+        print("Using RandAugment based pre-processing")
         rand_augment = RandAugment(args.rand_augment_m, args.rand_augment_n,
                                    # set hyper parameters to appropriate size
                                    translate_max=100, cutout_max_size=40)
@@ -267,7 +267,7 @@ def main(args):
         if args.lr_decay_rate:
             # use a few starting warmup epochs with exponentially decayed LR
             if args.warmup_epochs:
-                logging.info("Using %d warmup epochs", args.warmup_epochs)
+                print("Using {} warmup epochs".format(args.warmup_epochs))
                 lr = WarmupExponentialDecay(init_lr, int(steps_per_epoch * args.lr_decay_epochs),
                                             args.lr_decay_rate, int(steps_per_epoch * args.warmup_epochs),
                                             staircase=True)
