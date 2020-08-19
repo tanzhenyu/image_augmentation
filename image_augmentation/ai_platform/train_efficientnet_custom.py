@@ -379,6 +379,7 @@ def main(args):
         with writer.as_default():
             for tag, value in zip(tags, values):
                 tf.summary.scalar(tag, value, step=epoch)
+        writer.flush()
 
     checkpoint_path = args.job_dir + '/checkpoint'
     checkpoint_manager = tf.train.CheckpointManager(checkpoint, checkpoint_path, max_to_keep=5)

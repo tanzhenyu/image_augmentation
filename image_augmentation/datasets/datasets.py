@@ -108,6 +108,7 @@ def reduced_imagenet(data_dir=None):
 
 def large_imagenet(data_dir=None):
     ds, info = tfds.load('imagenet2012', shuffle_files=True,
+                         read_config=tfds.ReadConfig(skip_prefetch=True),
                          decoders={'image': tfds.decode.SkipDecoding()},
                          as_supervised=True, with_info=True, data_dir=data_dir)
     ds_dict = {
