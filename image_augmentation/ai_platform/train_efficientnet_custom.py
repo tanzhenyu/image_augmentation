@@ -174,8 +174,12 @@ def main(args):
     # set level of verbosity
     logging.getLogger("tensorflow").setLevel(args.verbosity)
 
+    logging.basicConfig(format="%(asctime)s.%(msecs)03d %(levelname)s %(module)s - %(funcName)s: %(message)s",
+                        datefmt='%m/%d/%Y %H:%M:%S')
+    logging.getLogger().setLevel(args.verbosity)
+
     # display script args
-    print("Arguments:", args)
+    logging.info("Arguments: %s", str(args))
 
     if args.tpu:
         resolver = tf.distribute.cluster_resolver.TPUClusterResolver(tpu=args.tpu)
@@ -188,10 +192,10 @@ def main(args):
     else:
         # use default distribution strategy
         strategy = tf.distribute.get_strategy()
-    print('Number of available devices: {}'.format(strategy.num_replicas_in_sync))
+    logging.info('Number of available devices: %d', strategy.num_replicas_in_sync)
 
     image_size = EFFICIENTNET[args.model_name]['image_size']
-    print('Using image size: {}'.format(image_size))
+    logging.info('Using image size: %d', image_size)
 
     with strategy.scope():
         model_builder = EFFICIENTNET[args.model_name]['model_builder']
@@ -229,7 +233,7 @@ def main(args):
 
     # apply RandAugment on training pipeline
     if args.rand_augment_n:
-        print("Using RandAugment based pre-processing")
+        loggin.info("Using RandAugment based pre-processing")
         rand_augment = RandAugment(args.rand_augment_m, args.rand_augment_n,
                                    # set hyper parameters to appropriate size
                                    translate_max=100, cutout_max_size=40)
@@ -267,7 +271,7 @@ def main(args):
         if args.lr_decay_rate:
             # use a few starting warmup epochs with exponentially decayed LR
             if args.warmup_epochs:
-                print("Using {} warmup epochs".format(args.warmup_epochs))
+                logging.info("Using %0.3f warmup epochs", args.warmup_epochs)
                 lr = WarmupExponentialDecay(init_lr, int(steps_per_epoch * args.lr_decay_epochs),
                                             args.lr_decay_rate, int(steps_per_epoch * args.warmup_epochs),
                                             staircase=True)
@@ -398,7 +402,7 @@ def main(args):
         train_loss = total_loss / num_batches
 
         checkpoint_manager.save()
-        print("Saved model checkpoint to: {}".format(checkpoint_path))
+        logging.info("Saved model checkpoint to: %s", checkpoint_path)
 
         tags = ['epoch_loss', 'epoch_accuracy', 'epoch_top_k_accuracy']
 
@@ -444,7 +448,7 @@ def main(args):
                   val_loss.result(),
                   val_accuracy.result() * 100,
                   val_k_accuracy.result() * 100)
-        print(template.format(dashes, *values, dashes))
+        logging.info("\n%s\n", template.format(dashes, *values, dashes))
 
         train_accuracy.reset_states()
         train_k_accuracy.reset_states()
@@ -457,11 +461,11 @@ def main(args):
         val_accuracy.reset_states()
         val_k_accuracy.reset_states()
 
-    print("Training finished")
+    logging.info("Training finished")
 
     save_path = args.job_dir + '/keras_model'
     model.save(save_path)
-    print("Saved keras model to: {}".format(save_path))
+    logging.info("Saved keras model to: %s", save_path)
 
 
 if __name__ == '__main__':
