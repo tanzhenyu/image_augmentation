@@ -88,7 +88,7 @@ def get_args():
     parser.add_argument(
         '--label-smoothing',
         default=0.1,
-        type=int,
+        type=float,
         help='amount of label smoothing to be applied on '
              'categorical cross entropy (softmax) loss, default=0.1')
     parser.add_argument(
