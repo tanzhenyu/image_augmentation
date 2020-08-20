@@ -376,7 +376,7 @@ def main(args):
                         labels, predictions))
 
                 for var in model.trainable_variables:
-                    loss += args.l2_regularization * 2 * tf.nn.l2_loss(var)
+                    loss += args.l2_reg * 2 * tf.nn.l2_loss(var)
                 return loss
         else:
             loss_fn = tf.keras.losses.sparse_categorical_crossentropy
