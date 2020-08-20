@@ -369,12 +369,19 @@ def main(args):
             metrics.append(keras.metrics.SparseTopKCategoricalAccuracy(k=5))
 
         if args.l2_reg != 0:
-            for var in model.trainable_variables:
-                # do not use l2 loss for BatchNorm weights
-                if 'bn' not in var.name:
-                    model.add_loss(lambda: keras.regularizers.L2(args.l2_reg)(var))
+            @tf.function
+            def loss_fn(labels, predictions):
+                loss = tf.nn.compute_average_loss(
+                    tf.keras.losses.sparse_categorical_crossentropy(
+                        labels, predictions))
 
-        model.compile(opt, loss='sparse_categorical_crossentropy', metrics=metrics)
+                for var in model.trainable_variables:
+                    loss += args.l2_regularization * 2 * tf.nn.l2_loss(var)
+                return loss
+        else:
+            loss_fn = tf.keras.losses.sparse_categorical_crossentropy
+
+        model.compile(optimizer=opt, loss=loss_fn, metrics=metrics)
 
     # prepare tensorboard logging
     tb_path = args.job_dir + '/tensorboard'
