@@ -199,8 +199,14 @@ def main(args):
     # set level of verbosity
     logging.getLogger("tensorflow").setLevel(args.verbosity)
 
+    # setup training logger
+    logging.basicConfig(format="%(asctime)s.%(msecs)03d %(levelname)s "
+                               "%(module)s - %(funcName)s: %(message)s",
+                        datefmt='%m/%d/%Y %H:%M:%S')
+    logging.getLogger().setLevel(args.verbosity)
+
     # display script args
-    print(args)
+    logging.info("Training script args: %s", str(args))
 
     if args.multi_gpu:
         # set GPU memory growth to avoid fork cannot allocate memory warning in multi-GPU env
@@ -243,13 +249,13 @@ def main(args):
         fig_file_path = args.job_dir + "/dataset_distribution.pdf"
         with tf.io.gfile.GFile(fig_file_path, "wb") as fig_file:
             plt.savefig(fig_file, format="pdf")
-        print("Wrote file to", fig_file_path)
+        logging.info("Wrote file to: %s", fig_file_path)
 
     if args.multi_gpu:
         strategy = tf.distribute.MirroredStrategy()
     else:
         strategy = tf.distribute.get_strategy()
-    print('Number of available devices: {}'.format(strategy.num_replicas_in_sync))
+    logging.info("Number of available devices: %d", strategy.num_replicas_in_sync)
 
     with strategy.scope():
         wrn = WideResNet(inp_shape, depth=args.wrn_depth, k=args.wrn_k,
@@ -260,6 +266,8 @@ def main(args):
 
     # whether to use cutout in baseline augmentation step
     cutout = not args.no_cutout
+    if cutout:
+        logging.info("Using Cutout")
 
     with strategy.scope():
         # CIFAR-10 and SVHN uses similar augmentation
@@ -293,15 +301,12 @@ def main(args):
         train_ds = train_ds.cache()
         val_ds = val_ds.cache()
 
-    # shuffle and batch the dataset
-    train_ds = train_ds.shuffle(1000, reshuffle_each_iteration=True).batch(args.batch_size)
-    val_ds = val_ds.batch(args.batch_size)
-
     def augment_map_fn_builder(augmenter):
         return lambda images, labels: (tf.py_function(augmenter, [images], images.dtype), labels)
 
     # apply AutoAugment (data augmentation) on training pipeline
     if args.auto_augment:
+        logging.info("Using AutoAugment pre-processing")
         # ensure AutoAugment policy dataset name always starts with "reduced_"
         policy_ds_name = "reduced_" + args.dataset if not args.dataset.startswith("reduced_") else args.dataset
         policy = autoaugment_policy(policy_ds_name)
@@ -313,11 +318,17 @@ def main(args):
 
     # apply RandAugment on training pipeline
     if args.rand_augment_n:
+        logging.info("Using RandAugment pre-processing: %d layers and %d magnitude",
+                     args.rand_augment_n, args.rand_augment_m)
         rand_augment = RandAugment(args.rand_augment_m, args.rand_augment_n,
                                    # set hyper parameters to size 16 as input size is 32 x 32
                                    translate_max=16, cutout_max_size=16)
         augment_map_fn = augment_map_fn_builder(rand_augment)
         train_ds = train_ds.map(augment_map_fn)
+
+    # shuffle and batch the dataset
+    train_ds = train_ds.shuffle(1000, reshuffle_each_iteration=True).batch(args.batch_size)
+    val_ds = val_ds.batch(args.batch_size)
 
     # prefetch dataset for faster access in case of larger datasets only (which are not cached)
     if args.dataset in ['svhn', 'imagenet']:
@@ -335,12 +346,14 @@ def main(args):
         # - use a callable weight decay schedule whenever required
         # - use SGD Nesterov or not
         if args.optimizer == 'sgdr':
+            logging.info("Using learning rate schedule: SGDR (CosineDecayWithRestarts)")
             lr = keras.experimental.CosineDecayRestarts(args.init_lr, steps_per_epoch * args.sgdr_t0,
                                                         args.sgdr_t_mul)
             if args.weight_decay_rate:
                 weight_decay = keras.experimental.CosineDecayRestarts(args.weight_decay_rate * args.init_lr,
                                                                       steps_per_epoch * args.sgdr_t0, args.sgdr_t_mul)
         elif args.drop_lr_by:
+            logging.info("Using learning rate schedule: PiecewiseConstantDecay")
             lr_boundaries = [(steps_per_epoch * epoch) for epoch in sorted(args.drop_lr_every)]
             lr_values = [args.init_lr * (args.drop_lr_by ** idx) for idx in range(len(lr_boundaries) + 1)]
             lr = keras.optimizers.schedules.PiecewiseConstantDecay(lr_boundaries, lr_values)
@@ -348,27 +361,34 @@ def main(args):
                 wd_values = [args.weight_decay_rate * lr_val for lr_val in lr_values]
                 weight_decay = keras.optimizers.schedules.PiecewiseConstantDecay(lr_boundaries, wd_values)
         else:
+            logging.info("Using learning rate: constant")
             lr = args.init_lr
             if args.weight_decay_rate:
                 weight_decay = args.weight_decay_rate * lr
 
         if args.optimizer.startswith('sgd'):
             if args.weight_decay_rate:
+                logging.info("Using optimizer: SGDW (SGD w/ weight decay)")
                 opt = tfa.optimizers.SGDW(weight_decay, lr, momentum=0.9, nesterov=args.sgd_nesterov)
             else:
+                logging.info("Using optimizer: SGD")
                 opt = keras.optimizers.SGD(lr, momentum=0.9, nesterov=args.sgd_nesterov)
         else:  # adam
             if args.weight_decay_rate:
+                logging.info("Using optimizer: AdamW (Adam w/ weight decay)")
                 opt = tfa.optimizers.AdamW(weight_decay, lr)
             else:
+                logging.info("Using optimizer: Adam")
                 opt = keras.optimizers.Adam(lr)
 
         metrics = [keras.metrics.SparseCategoricalAccuracy()]
         # use top-5 accuracy metric with ImageNet and reduced-ImageNet only
         if args.dataset.endswith("imagenet"):
+            logging.info("Using metric: Top-5 Accuracy")
             metrics.append(keras.metrics.SparseTopKCategoricalAccuracy(k=5))
 
         if args.l2_reg != 0:
+            logging.info("Using loss: Cross Entropy w/ L2 regularization")
             @tf.function
             def loss_fn(labels, predictions):
                 loss = tf.nn.compute_average_loss(
@@ -376,9 +396,10 @@ def main(args):
                         labels, predictions))
 
                 for var in model.trainable_variables:
-                    loss += args.l2_reg * 2 * tf.nn.l2_loss(var)
+                    loss += args.l2_reg * tf.nn.l2_loss(var)
                 return loss
         else:
+            logging.info("Using loss: Cross Entropy")
             loss_fn = tf.keras.losses.sparse_categorical_crossentropy
 
         model.compile(optimizer=opt, loss=loss_fn, metrics=metrics)
@@ -390,7 +411,8 @@ def main(args):
                  keras.callbacks.ModelCheckpoint(checkpoint_path),
                  TensorBoardLRLogger(tb_path + '/train')]
 
-    print("Using tensorboard directory as", tb_path)
+    logging.info("Using tensorboard directory: %s", tb_path)
+    logging.info("Using model checkpoint directory: %s", checkpoint_path)
 
     # train the model
     model.fit(train_ds, validation_data=val_ds, epochs=args.epochs, callbacks=callbacks)
@@ -398,7 +420,7 @@ def main(args):
     # save keras model
     save_path = args.job_dir + '/keras_model'
     keras.models.save_model(model, save_path)
-    print("Model exported to", save_path)
+    logging.info("Model exported to: %s", save_path)
 
 
 if __name__ == '__main__':
