@@ -6,6 +6,7 @@ import logging
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
+import tensorflow_addons as tfa
 
 from image_augmentation.datasets import large_imagenet
 from image_augmentation.image import RandAugment
@@ -118,6 +119,18 @@ def get_args():
         help='amount of L2 regularization (weight decay rate) to be applied on all weights '
              'of the network, default=1e-5')
     parser.add_argument(
+        '--moving-average-decay',
+        default=0.9999,
+        type=float,
+        help='rate of moving average decay applied on trainable variables, '
+             'batch norm moving mean and variance, default=0.9999')
+    parser.add_argument(
+        '--val-every',
+        default=10,
+        type=int,
+        help='number of epochs to set how frequent '
+             'validation would be performed, default=10')
+    parser.add_argument(
         '--tpu',
         default=None,
         type=str,
@@ -198,6 +211,7 @@ def main(args):
     logging.info('Using image size: %d', image_size)
 
     with strategy.scope():
+        logging.info("Using architecture: %s", args.model_name)
         model_builder = EFFICIENTNET[args.model_name]['model_builder']
         model = model_builder(include_top=True,
                               weights=None)
@@ -269,9 +283,10 @@ def main(args):
 
     with strategy.scope():
         if args.lr_decay_rate:
+            logging.info("Using exponentially decayed learning rate: %f", args.lr_decay_rate)
             # use a few starting warmup epochs with exponentially decayed LR
             if args.warmup_epochs:
-                logging.info("Using %0.3f warmup epochs", args.warmup_epochs)
+                logging.info("Using warmup epochs: %0.3f", args.warmup_epochs)
                 lr = WarmupExponentialDecay(init_lr, int(steps_per_epoch * args.lr_decay_epochs),
                                             args.lr_decay_rate, int(steps_per_epoch * args.warmup_epochs),
                                             staircase=True)
@@ -281,34 +296,48 @@ def main(args):
                                                                  args.lr_decay_rate, staircase=True)
         # do not use exponential decay
         else:
+            logging.info("Using constant learning rate: %f", init_lr)
             lr = init_lr
 
+        logging.info("Using optimizer: %s", args.optimizer)
+        # use an RMSprop optimizer
         if args.optimizer == 'rmsprop':
             optimizer = keras.optimizers.RMSprop(learning_rate=lr,
                                                  rho=args.optimizer_decay,
                                                  momentum=args.optimizer_momentum,
                                                  epsilon=0.001)
+        # use SGD optimizer w/ or w/o momentum
         elif args.optimizer == 'sgd':
             optimizer = keras.optimizers.SGD(learning_rate=lr,
                                              momentum=args.optimizer_momentum)
+        # use adam optimizer
         else:
             optimizer = keras.optimizers.Adam(learning_rate=lr)
+
+        has_ema = args.moving_average_decay > 0
+        if has_ema:
+            optimizer = tfa.optimizers.MovingAverage(optimizer, average_decay=args.moving_average_decay)
 
         crossentropy_loss = keras.losses.CategoricalCrossentropy(
             label_smoothing=args.label_smoothing,
             reduction=keras.losses.Reduction.NONE)
 
+        # use Cross Entropy with L2 Regularization loss
         def loss_fn(labels, predictions):
             per_example_loss = crossentropy_loss(labels, predictions)
             loss = tf.nn.compute_average_loss(per_example_loss,
                                               global_batch_size=args.train_batch_size)
 
+            # use tf.nn.l2_loss for L2 regularization of
+            # all model trainable variables except those
+            # being used for batch normalization
             for var in model.trainable_variables:
                 if 'bn' not in var.name:
                     loss += tf.nn.scale_regularization_loss(
                         args.l2_regularization * tf.nn.l2_loss(var))
             return loss
 
+        # evaluation metrics
         minival_loss = tf.keras.metrics.Mean(name='minival_loss')
         val_loss = tf.keras.metrics.Mean(name='val_loss')
 
@@ -319,6 +348,7 @@ def main(args):
         val_accuracy = tf.keras.metrics.CategoricalAccuracy(
             name='val_accuracy')
 
+        # use top-5 accuracy (since, dealing with ImageNet)
         train_k_accuracy = tf.keras.metrics.TopKCategoricalAccuracy(
             k=5, name='train_top_k_accuracy')
         minival_k_accuracy = tf.keras.metrics.TopKCategoricalAccuracy(
@@ -326,9 +356,11 @@ def main(args):
         val_k_accuracy = tf.keras.metrics.TopKCategoricalAccuracy(
             k=5, name='val_top_k_accuracy')
 
+        # allow model to checkpoint
         checkpoint = tf.train.Checkpoint(optimizer=optimizer, model=model)
 
     def train_step(dataset_inputs):
+        """One single step of training."""
         images, labels = dataset_inputs
 
         with tf.GradientTape() as tape:
@@ -336,14 +368,31 @@ def main(args):
             loss = loss_fn(labels, predictions)
 
         gradients = tape.gradient(loss, model.trainable_variables)
-        optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+        if not has_ema:
+            optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+        else:
+            grad_list = gradients
+            var_list = model.trainable_variables
+            # also apply EMA on Batch Norm moving mean and variance
+            for var in model.variables:
+                if ('moving_mean' in var.name) or ('moving_variance' in var.name):
+                    var_list.append(var)
+                    # as moving_mean and moving_variance are
+                    # non-trainable parameters, apply zero grad to each
+                    grad_list.append(tf.zeros_like(var))
+            # in this way, the MovingAverage optimizer
+            # would keep track of BN non-trainable vars also
+            optimizer.apply_gradients(zip(grad_list, var_list))
 
         train_accuracy.update_state(labels, predictions)
         train_k_accuracy.update_state(labels, predictions)
         return loss
 
     def eval_step_builder(loss_metric, accuracy_metric, top_k_accuracy_metric):
+        """Returns a function that can be used for evaluation with given eval metrics.
+        (allows re-usability across minival, val splits)"""
         def eval_step(dataset_inputs):
+            """One single step of evaluation with specified eval metrics."""
             images, labels = dataset_inputs
 
             predictions = model(images, training=False)
@@ -356,20 +405,24 @@ def main(args):
 
     @tf.function
     def distributed_train_step(dataset_inputs):
+        """Distribute the training step across strategy aware replicas."""
         per_replica_losses = strategy.run(train_step, args=(dataset_inputs,))
         return strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses,
                                axis=None)
 
     @tf.function
     def distributed_minival_step(dataset_inputs):
+        """Distribute the minival evaluation step across strategy aware replicas."""
         eval_step = eval_step_builder(minival_loss, minival_accuracy, minival_k_accuracy)
         return strategy.run(eval_step, args=(dataset_inputs,))
 
     @tf.function
     def distributed_val_step(dataset_inputs):
+        """Distribute the val evaluation step across strategy aware replicas."""
         eval_step = eval_step_builder(val_loss, val_accuracy, val_k_accuracy)
         return strategy.run(eval_step, args=(dataset_inputs,))
 
+    # setup TensorBoard logging (separately for train, minival, val)
     tensorboard_path = args.job_dir + '/tensorboard'
     splits = ["train", "minival", "val"]
     writers = {
@@ -378,18 +431,21 @@ def main(args):
     }
 
     def log_tensorboard(writer, tags, values, epoch):
+        """Log scalars (specific to given tags) for one step (epoch-wise) of training / eval."""
         with writer.as_default():
             for tag, value in zip(tags, values):
                 tf.summary.scalar(tag, value, step=epoch)
-        writer.flush()
 
+    # use a checkpoint manager to keep only the 10 latest checkpoints
     checkpoint_path = args.job_dir + '/checkpoint'
-    checkpoint_manager = tf.train.CheckpointManager(checkpoint, checkpoint_path, max_to_keep=5)
+    checkpoint_manager = tf.train.CheckpointManager(checkpoint, checkpoint_path, max_to_keep=10)
 
+    # distribute the dataset pipelines in run with the respective strategy
     train_dist_ds = strategy.experimental_distribute_dataset(train_ds)
     minival_dist_ds = strategy.experimental_distribute_dataset(minival_ds)
     val_dist_ds = strategy.experimental_distribute_dataset(val_ds)
 
+    # epoch wise model training and evaluation
     for epoch in range(args.epochs):
 
         # Training Loop
@@ -401,6 +457,12 @@ def main(args):
 
         train_loss = total_loss / num_batches
 
+        # backup non averaged model (training) weights
+        if has_ema:
+            non_avg_weights = model.get_weights()
+            optimizer.assign_average_vars(model.variables)
+
+        # save checkpoint
         checkpoint_manager.save()
         logging.info("Saved model checkpoint to: %s", checkpoint_path)
 
@@ -410,56 +472,73 @@ def main(args):
                         [train_loss, train_accuracy.result(), train_k_accuracy.result()],
                         epoch)
 
-        # Evaluation on Minival split
-        for inputs in minival_dist_ds:
-            distributed_minival_step(inputs)
+        # perform validation only as frequent as specified
+        should_eval = (epoch + 1) % args.val_every == 0
 
-        log_tensorboard(writers['minival'], tags,
-                        [minival_loss.result(), minival_accuracy.result(), minival_k_accuracy.result()],
-                        epoch)
+        if should_eval:
+            # Evaluation on Minival split
+            for inputs in minival_dist_ds:
+                distributed_minival_step(inputs)
 
-        # Evaluation on Validation split
-        for inputs in val_dist_ds:
-            distributed_val_step(inputs)
+            log_tensorboard(writers['minival'], tags,
+                            [minival_loss.result(), minival_accuracy.result(), minival_k_accuracy.result()],
+                            epoch)
 
-        log_tensorboard(writers['val'], tags,
-                        [val_loss.result(), val_accuracy.result(), val_k_accuracy.result()],
-                        epoch)
+            # Evaluation on Validation split
+            for inputs in val_dist_ds:
+                distributed_val_step(inputs)
 
+            log_tensorboard(writers['val'], tags,
+                            [val_loss.result(), val_accuracy.result(), val_k_accuracy.result()],
+                            epoch)
+
+        # restore non average weights after checkpoint and evaluation
+        # for training model ahead
+        if has_ema:
+            model.set_weights(non_avg_weights)
+
+        # helpful to print learning rate
         if hasattr(optimizer.learning_rate,  '__call__'):
             current_lr = optimizer.learning_rate(optimizer.iterations)
         else:
             current_lr = optimizer.learning_rate
 
         dashes = "=" * 130
-        template = ("{}\n"
-                    "Epoch {}/{}, learning_rate: {},\n"
-                    "loss: {}, accuracy: {}, top_k_accuracy: {},\n"
-                    "minival_loss: {}, minival_accuracy: {}, minival_top_k_accuracy: {},\n"
-                    "val_loss: {}, val_accuracy: {}, val_top_k_accuracy: {}\n"
-                    "{}")
-        values = (epoch + 1, args.epochs, current_lr,
+        template = ("learning_rate: {},\n"
+                    "loss: {}, accuracy: {}, top_k_accuracy: {},\n")
+        values = (current_lr,
                   train_loss,
                   train_accuracy.result() * 100,
-                  train_k_accuracy.result() * 100,
-                  minival_loss.result(),
-                  minival_accuracy.result() * 100,
-                  minival_k_accuracy.result() * 100,
-                  val_loss.result(),
-                  val_accuracy.result() * 100,
-                  val_k_accuracy.result() * 100)
-        logging.info("\n%s\n", template.format(dashes, *values, dashes))
+                  train_k_accuracy.result() * 100)
 
+        if should_eval:
+            template += ("minival_loss: {}, minival_accuracy: {}, minival_top_k_accuracy: {},\n"
+                         "val_loss: {}, val_accuracy: {}, val_top_k_accuracy: {}\n")
+            values += (minival_loss.result(),
+                       minival_accuracy.result() * 100,
+                       minival_k_accuracy.result() * 100,
+                       val_loss.result(),
+                       val_accuracy.result() * 100,
+                       val_k_accuracy.result() * 100)
+
+        template = ("{}\nEpoch {}/{} " + template + "{}")
+        # print training loss and other aggregated metrics (for this epoch)
+        logging.info("\n%s\n", template.format(dashes, epoch + 1, args.epochs,
+                                               *values, dashes))
+
+        # reset train metrics for next epoch
         train_accuracy.reset_states()
         train_k_accuracy.reset_states()
 
-        minival_loss.reset_states()
-        minival_accuracy.reset_states()
-        minival_k_accuracy.reset_states()
+        # reset eval metrics
+        if should_eval:
+            minival_loss.reset_states()
+            minival_accuracy.reset_states()
+            minival_k_accuracy.reset_states()
 
-        val_loss.reset_states()
-        val_accuracy.reset_states()
-        val_k_accuracy.reset_states()
+            val_loss.reset_states()
+            val_accuracy.reset_states()
+            val_k_accuracy.reset_states()
 
     logging.info("Training finished")
 
