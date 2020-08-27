@@ -105,23 +105,22 @@ ds = tfds.load('cifar10', split='train', as_supervised=True)
 
 # use AutoAugment policy for CIFAR-10
 cifar10_policy = autoaugment_policy("reduced_cifar10")
-augmenter = PolicyAugmentation(cifar10_policy, translate_max=16, cutout_max_size=16) example_images
+augmenter = PolicyAugmentation(cifar10_policy, translate_max=16, cutout_max_size=16)
 
-example_images
 subset_size = 20
 ds = ds.take(subset_size)
 
-original_images = [image for image in ds]
-show_images(original_images) example_images
+original_images = [image for image, label in ds]
+show_images(original_images)  # show original images
 
 def map_fn(image, label):
-    augmented_image = tf.py_function(augmenter, [image], image.dtype)
+    augmented_image = augmenter.apply_on_image(image)
     return augmented_image, label
-example_images
+
 aug_ds = ds.map(map_fn, tf.data.experimental.AUTOTUNE)
 
 augmented_images = [image for image, label in aug_ds]
-show_images(augmented_images) example_images
+show_images(augmented_images)  # show augmented images
 ```
 
 ![Original Images](../../example_images/cifar10_images.png)
@@ -198,3 +197,34 @@ show_images(augmented_images) # show augmented images
 
 ![Original Images](../../example_images/tf-flowers_images1.png)
 ![Augmented Images](../../example_images/tf-flowers_augmented_images1.png)
+
+**Example 5**: Apply RandAugment on a TFDS image pipeline
+```python
+import tensorflow as tf
+import tensorflow_datasets as tfds
+from image_augmentation.image import RandAugment
+
+# load TF-Flowers as TFDS pipeline
+ds = tfds.load('tf_flowers', split='train', as_supervised=True)
+
+# use RandAugment with M=17, N=2
+augmenter = RandAugment(17, 2)
+
+subset_size = 20
+ds = ds.take(subset_size)
+
+original_images = [image for image, label in ds]
+show_images(original_images)  # show original images
+
+def map_fn(image, label):
+    augmented_image = augmenter.apply_on_image(image)
+    return augmented_image, label
+
+aug_ds = ds.map(map_fn, tf.data.experimental.AUTOTUNE)
+
+augmented_images = [image for image, label in aug_ds]
+show_images(augmented_images)  # show augmented images
+```
+
+![Original Images](../../example_images/tf-flowers_images2.png)
+![Augmented Images](../../example_images/tf-flowers_augmented_images2.png)

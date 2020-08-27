@@ -73,7 +73,7 @@ def autoaugment_policy(dataset='reduced_imagenet', efficientnet=False):
             ...].
     """
     if efficientnet:
-        assert dataset is "imagenet"
+        assert dataset == "imagenet"
         efficientnet_policy = [
             [('Equalize', 0.8, 1), ('ShearY', 0.8, 4)],
             [('Color', 0.4, 9), ('Equalize', 0.6, 3)],
@@ -227,6 +227,7 @@ def levels_to_args(translate_max_loc=150, rotate_max_deg=30, cutout_max_size=60,
     gray_color = 128
 
     def param(level, min_arg, max_arg):
+        level = float(level)
         return (level * (max_arg - min_arg) / max_level) + min_arg
 
     def randomly_negate(arg):
@@ -307,26 +308,73 @@ def levels_to_args(translate_max_loc=150, rotate_max_deg=30, cutout_max_size=60,
     }
 
 
-def apply_subpolicy(image, subpolicy, args):
+def apply_subpolicy(image, parsed_subpolicy, num_ops, args):
     """Applies a specific subpolicy on an image."""
-    def apply_operation(image_, op_name_, level_):
-        return TRANSFORMS[op_name_](image_, *args[op_name_](level_))
+    image_shape = image.shape
+
+    op_names, op_probs, op_levels = parsed_subpolicy
+    transform_names = list(TRANSFORMS.keys())
+
+    def get_op_fn_and_args(op_name_, level_, args):
+        """Obtains the operation and relevant args given `op_name` and `level`."""
+        return TRANSFORMS[op_name_], args[op_name_](level_)
 
     # iterates each op in the subpolicy and applies on the image (if probable)
-    for op_name, prob, level in subpolicy:
+    for idx in tf.range(num_ops):
+        # set shape of image for `tf.while_loop` to prevent (None,) shapes
+        # TODO: check why image op(s) produce None sizes
+        tf.autograph.experimental.set_loop_options(shape_invariants=[
+            (image, image_shape)
+        ])
+
+        op_name, op_prob, op_level = op_names[idx], op_probs[idx], op_levels[idx]
+
+        # randomly draw a number in range (0, 1)
+        # and choose whether op should be applied or not using probability
         random_draw = tf.random.uniform([])
-        should_apply_op = tf.floor(random_draw + tf.cast(prob, tf.float32))
+        should_apply_op = tf.floor(random_draw + tf.cast(op_prob, tf.float32))
         should_apply_op = tf.cast(should_apply_op, tf.bool)
 
-        image = apply_operation(image, op_name, level) if should_apply_op else image
+        # nested for loop to iterate each op
+        # helps make graph serializable
+        for op_name_ in transform_names:
+            # set shape of image for `tf.while_loop` to prevent (None,) shapes
+            tf.autograph.experimental.set_loop_options(shape_invariants=[
+                (image, image_shape)
+            ])
+
+            same_op = tf.equal(op_name, op_name_)
+            op_level_ = op_level
+            op_fn, op_arg = get_op_fn_and_args(op_name_, op_level_, args)
+
+            image = tf.cond(should_apply_op and same_op,
+                            lambda selected_op=op_fn, selected_op_arg=op_arg:
+                                selected_op(image, *selected_op_arg),
+                            lambda: image)
+            image = tf.ensure_shape(image, image_shape)
+
     return image
 
 
-def randomly_select_subpolicy(policy):
+def parse_policy(policy):
+    """Parses a policy of nested list of tuples and converts them
+    into a tuple of nested list of lists. Helps with TF serializability."""
+    op_names = [[name for name, _, _ in subpolicy] for subpolicy in policy]
+    op_probs = [[prob for _, prob, _ in subpolicy] for subpolicy in policy]
+    op_levels = [[level for _, _, level in subpolicy] for subpolicy in policy]
+
+    return op_names, op_probs, op_levels
+
+
+def randomly_select_subpolicy(parsed_policy, num_subpolicies):
     """Randomly select a single subpolicy from complete policy."""
-    n_subpolicies = len(policy)
-    random_selection = tf.random.uniform([], 0, n_subpolicies, tf.int32)
-    return policy[random_selection]
+    op_names, op_probs, op_levels = parsed_policy
+
+    random_selection = tf.random.uniform([], 0, num_subpolicies, tf.int32)
+
+    return (tf.gather(op_names, random_selection),
+            tf.gather(op_probs, random_selection),
+            tf.gather(op_levels, random_selection))
 
 
 class PolicyAugmentation:
@@ -364,13 +412,58 @@ class PolicyAugmentation:
         self.max_level = max_level
         self.args_level = levels_to_args(self.max_level, self.translate_max,
                                          self.rotate_max_degree, self.cutout_max_size)
-        self.policy = policy
+        self.policy = PolicyAugmentation._fix_policy(policy)
+
+        self.parsed_policy = parse_policy(self.policy)
+        self.num_subpolicies = len(self.policy)
+        self.num_ops = len(self.policy[0])
 
         if seed is not None:
             tf.random.set_seed(seed)
 
+    @staticmethod
+    def _fix_policy(policy):
+        """Fixes a `policy` containing inconsistent number of ops in their subpolicies.
+        Adds required number number of dummy ops to each subpolicy with lesser ops than the maximum.
+
+        Args:
+            policy: A nested list of tuples of form [[('op_name', probability, level),
+                ('op_name', probability, level)], ...].
+
+        Returns:
+            A nested list of tuples of form [[('op_name', probability, level),
+                ('op_name', probability, level)], ...].
+        """
+        # calculate number of ops in
+        num_ops = [len(subpolicy) for subpolicy in policy]
+        max_num_ops = max(num_ops)
+
+        # a dummy subpolicy with probability 0.0
+        some_op_name = list(TRANSFORMS.keys())[0]
+        dummy_op = (some_op_name, 0.0, 0.0)
+
+        for idx, each_num_ops in enumerate(num_ops):
+            diff_num_ops = max_num_ops - each_num_ops
+            if diff_num_ops != 0:
+                policy[idx] += [dummy_op] * diff_num_ops
+
+        return policy
+
+    def apply_on_image(self, image):
+        """Applies augmentation on a single `image`.
+
+        Args:
+            image: An int or float tensor of shape `[height, width, num_channels]`.
+
+        Returns:
+             A tensor with same shape and type as that of `image`.
+        """
+        parsed_subpolicy = randomly_select_subpolicy(self.parsed_policy, self.num_subpolicies)
+        augmented_image = apply_subpolicy(image, parsed_subpolicy, self.num_ops, self.args_level)
+        return augmented_image
+
     def apply(self, images):
-        """Applies augmentation on a batch of `images` or on a single image.
+        """Applies augmentation on a batch of `images`.
 
         Args:
             images: An int or float tensor of shape `[height, width, num_channels]` or
@@ -380,18 +473,7 @@ class PolicyAugmentation:
              A tensor with same shape and type as that of `images`.
         """
         images = tf.convert_to_tensor(images)
-        is_image_batch = tf.rank(images) == 4
-
-        def apply_on_image(image):
-            """Applies data augmentation on a single image."""
-            subpolicy = randomly_select_subpolicy(self.policy)
-            augmented_image = apply_subpolicy(image, subpolicy, self.args_level)
-            return augmented_image
-
-        # if batch, use map_fn and then apply, else apply directly
-        augmented_images = tf.cond(is_image_batch,
-                                   lambda: tf.map_fn(apply_on_image, images),
-                                   lambda: apply_on_image(images))
+        augmented_images = tf.map_fn(self.apply_on_image, images)
         return augmented_images
 
     def __call__(self, images):
@@ -478,6 +560,7 @@ class RandAugment:
 
     def apply_on_image(self, image):
         """Applies augmentation on a single `image`.
+
         Args:
             image: An int or float tensor of shape `[height, width, num_channels]`.
 
@@ -496,7 +579,7 @@ class RandAugment:
         Returns:
              A tensor with same shape and type as that of `images`.
         """
-        # if batch, use map_fn and then apply, else apply directly
+        images = tf.convert_to_tensor(images)
         augmented_images = tf.map_fn(self.apply_on_image, images)
         return augmented_images
 
