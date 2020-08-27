@@ -310,6 +310,8 @@ def levels_to_args(translate_max_loc=150, rotate_max_deg=30, cutout_max_size=60,
 
 def apply_subpolicy(image, parsed_subpolicy, num_ops, args):
     """Applies a specific subpolicy on an image."""
+    image_shape = image.shape
+
     op_names, op_probs, op_levels = parsed_subpolicy
     transform_names = list(TRANSFORMS.keys())
 
@@ -319,13 +321,28 @@ def apply_subpolicy(image, parsed_subpolicy, num_ops, args):
 
     # iterates each op in the subpolicy and applies on the image (if probable)
     for idx in tf.range(num_ops):
+        # set shape of image for `tf.while_loop` to prevent (None,) shapes
+        # TODO: check why image op(s) produce None sizes
+        tf.autograph.experimental.set_loop_options(shape_invariants=[
+            (image, image_shape)
+        ])
+
         op_name, op_prob, op_level = op_names[idx], op_probs[idx], op_levels[idx]
 
+        # randomly draw a number in range (0, 1)
+        # and choose whether op should be applied or not using probability
         random_draw = tf.random.uniform([])
         should_apply_op = tf.floor(random_draw + tf.cast(op_prob, tf.float32))
         should_apply_op = tf.cast(should_apply_op, tf.bool)
 
+        # nested for loop to iterate each op
+        # helps make graph serializable
         for op_name_ in transform_names:
+            # set shape of image for `tf.while_loop` to prevent (None,) shapes
+            tf.autograph.experimental.set_loop_options(shape_invariants=[
+                (image, image_shape)
+            ])
+
             same_op = tf.equal(op_name, op_name_)
             op_level_ = op_level
             op_fn, op_arg = get_op_fn_and_args(op_name_, op_level_, args)
@@ -334,11 +351,14 @@ def apply_subpolicy(image, parsed_subpolicy, num_ops, args):
                             lambda selected_op=op_fn, selected_op_arg=op_arg:
                                 selected_op(image, *selected_op_arg),
                             lambda: image)
+            image = tf.ensure_shape(image, image_shape)
 
     return image
 
 
 def parse_policy(policy):
+    """Parses a policy of nested list of tuples and converts them
+    into a tuple of nested list of lists. Helps with TF serializability."""
     op_names = [[name for name, _, _ in subpolicy] for subpolicy in policy]
     op_probs = [[prob for _, prob, _ in subpolicy] for subpolicy in policy]
     op_levels = [[level for _, _, level in subpolicy] for subpolicy in policy]
