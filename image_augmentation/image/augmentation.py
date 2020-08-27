@@ -450,12 +450,20 @@ class PolicyAugmentation:
         return policy
 
     def apply_on_image(self, image):
+        """Applies augmentation on a single `image`.
+
+        Args:
+            image: An int or float tensor of shape `[height, width, num_channels]`.
+
+        Returns:
+             A tensor with same shape and type as that of `image`.
+        """
         parsed_subpolicy = randomly_select_subpolicy(self.parsed_policy, self.num_subpolicies)
         augmented_image = apply_subpolicy(image, parsed_subpolicy, self.num_ops, self.args_level)
         return augmented_image
 
     def apply(self, images):
-        """Applies augmentation on a batch of `images` or on a single image.
+        """Applies augmentation on a batch of `images`.
 
         Args:
             images: An int or float tensor of shape `[height, width, num_channels]` or
@@ -552,6 +560,7 @@ class RandAugment:
 
     def apply_on_image(self, image):
         """Applies augmentation on a single `image`.
+
         Args:
             image: An int or float tensor of shape `[height, width, num_channels]`.
 
