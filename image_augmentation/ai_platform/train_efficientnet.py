@@ -8,7 +8,7 @@ import tensorflow as tf
 from tensorflow import keras
 
 from image_augmentation.datasets import large_imagenet
-from image_augmentation.image import RandAugment
+from image_augmentation.image import autoaugment_policy, PolicyAugmentation, RandAugment
 from image_augmentation.preprocessing.efficientnet_preprocess import preprocess_fn_builder
 from image_augmentation.optimizer_schedules import WarmupExponentialDecay
 from image_augmentation.callbacks import ExtraValidation
@@ -243,8 +243,11 @@ def main(args):
 
     # apply AutoAugment (data augmentation) on training pipeline
     if args.auto_augment:
-        raise NotImplementedError("AutoAugment preprocessing have not been implemented for TPUs yet. "
-                                  "Consider using RandAugment preprocessing instead.")
+        logging.info("Using AutoAugment pre-processing")
+        policy = autoaugment_policy('imagenet', efficientnet=True)
+        auto_augment = PolicyAugmentation(policy)
+        train_ds = train_ds.map(lambda image, label: (auto_augment.apply_on_image(image), label),
+                                tf.data.experimental.AUTOTUNE)
 
     # apply RandAugment on training pipeline
     if args.rand_augment_n:
