@@ -302,7 +302,7 @@ def main(args):
         val_ds = val_ds.cache()
 
     def augment_map_fn_builder(augmenter):
-        return lambda images, labels: (tf.py_function(augmenter, [images], images.dtype), labels)
+        return lambda image, label: (augmenter.apply_on_image(image), label)
 
     # apply AutoAugment (data augmentation) on training pipeline
     if args.auto_augment:
@@ -314,7 +314,7 @@ def main(args):
         # set hyper parameters to size 16 as input size is 32 x 32
         auto_augment = PolicyAugmentation(policy, translate_max=16, cutout_max_size=16)
         augment_map_fn = augment_map_fn_builder(auto_augment)
-        train_ds = train_ds.map(augment_map_fn)  # refrain from using AUTOTUNE here, tf.py_func cannot parallel execute
+        train_ds = train_ds.map(augment_map_fn, tf.data.experimental.AUTOTUNE)
 
     # apply RandAugment on training pipeline
     if args.rand_augment_n:

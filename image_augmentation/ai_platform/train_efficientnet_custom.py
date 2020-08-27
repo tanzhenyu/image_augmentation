@@ -244,7 +244,7 @@ def main(args):
     if args.auto_augment:
         logging.info("Using AutoAugment pre-processing")
         policy = autoaugment_policy('imagenet', efficientnet=True)
-        auto_augment = PolicyAugmentation(policy)
+        auto_augment = PolicyAugmentation(policy, cutout_max_size=100, translate_max=250)
         train_ds = train_ds.map(lambda image, label: (auto_augment.apply_on_image(image), label),
                                 tf.data.experimental.AUTOTUNE)
 
