@@ -204,7 +204,7 @@ import tensorflow as tf
 import tensorflow_datasets as tfds
 from image_augmentation.image import RandAugment
 
-# load CIFAR-10 as TFDS pipeline
+# load TF-Flowers as TFDS pipeline
 ds = tfds.load('tf_flowers', split='train', as_supervised=True)
 
 # use AutoAugment policy for CIFAR-10
