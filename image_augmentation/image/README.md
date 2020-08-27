@@ -207,7 +207,7 @@ from image_augmentation.image import RandAugment
 # load TF-Flowers as TFDS pipeline
 ds = tfds.load('tf_flowers', split='train', as_supervised=True)
 
-# use AutoAugment policy for CIFAR-10
+# use RandAugment with M=17, N=2
 augmenter = RandAugment(17, 2)
 
 subset_size = 20
