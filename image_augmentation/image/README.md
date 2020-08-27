@@ -105,23 +105,22 @@ ds = tfds.load('cifar10', split='train', as_supervised=True)
 
 # use AutoAugment policy for CIFAR-10
 cifar10_policy = autoaugment_policy("reduced_cifar10")
-augmenter = PolicyAugmentation(cifar10_policy, translate_max=16, cutout_max_size=16) example_images
+augmenter = PolicyAugmentation(cifar10_policy, translate_max=16, cutout_max_size=16)
 
-example_images
 subset_size = 20
 ds = ds.take(subset_size)
 
-original_images = [image for image in ds]
-show_images(original_images) example_images
+original_images = [image for image, label in ds]
+show_images(original_images)  # show original images
 
 def map_fn(image, label):
-    augmented_image = tf.py_function(augmenter, [image], image.dtype)
+    augmented_image = augmenter.apply_on_image(image)
     return augmented_image, label
-example_images
+
 aug_ds = ds.map(map_fn, tf.data.experimental.AUTOTUNE)
 
 augmented_images = [image for image, label in aug_ds]
-show_images(augmented_images) example_images
+show_images(augmented_images)  # show augmented images
 ```
 
 ![Original Images](../../example_images/cifar10_images.png)
