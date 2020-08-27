@@ -214,7 +214,7 @@ subset_size = 20
 ds = ds.take(subset_size)
 
 original_images = [image for image, label in ds]
-# show_images(original_images)  # show original images
+show_images(original_images)  # show original images
 
 def map_fn(image, label):
     augmented_image = augmenter.apply_on_image(image)
