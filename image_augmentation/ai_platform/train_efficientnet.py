@@ -34,7 +34,7 @@ def get_args():
         help='size of each training batch, default=2048')
     parser.add_argument(
         '--val-batch-size',
-        default=64,
+        default=1000,
         type=int,
         help='size of each validation batch, default=64')
     parser.add_argument(
@@ -270,8 +270,9 @@ def main(args):
             minival_ds = minival_ds.map(cast_to_float, tf.data.experimental.AUTOTUNE)
 
     # shuffle and batch the dataset
-    train_ds = train_ds.shuffle(1024, reshuffle_each_iteration=True).batch(args.train_batch_size,
-                                                                           drop_remainder=True)
+    train_ds = train_ds.shuffle(1024,
+                                reshuffle_each_iteration=True).repeat().batch(args.train_batch_size,
+                                                                              drop_remainder=True)
     val_ds = val_ds.batch(args.val_batch_size, drop_remainder=True)
 
     if minival_ds:
@@ -285,8 +286,8 @@ def main(args):
         minival_ds = minival_ds.prefetch(tf.data.experimental.AUTOTUNE)
 
     # calculate steps per epoch for optimizer schedule num steps
-    steps_per_epoch = tf.data.experimental.cardinality(train_ds)
-    steps_per_epoch = steps_per_epoch.numpy()  # helps model optimizer become JSON serializable
+    steps_per_epoch = tf.data.experimental.cardinality(ds['train_ds']) // args.train_batch_size
+    steps_per_epoch = int(steps_per_epoch.numpy())  # helps model optimizer become JSON serializable
 
     init_lr = args.base_lr * (args.train_batch_size / 256.)
 
@@ -328,7 +329,8 @@ def main(args):
 
         metrics = [keras.metrics.CategoricalAccuracy(),
                    keras.metrics.TopKCategoricalAccuracy(k=5)]
-        model.compile(opt, crossentropy_loss, metrics)
+        model.compile(opt, crossentropy_loss, metrics,
+                      experimental_steps_per_execution=steps_per_epoch)
 
     # prepare for tensorboard logging and model checkpoints
     tb_path = args.job_dir + '/tensorboard'
@@ -364,9 +366,9 @@ def main(args):
             model.optimizer.iterations.assign(initial_epoch * steps_per_epoch)
 
     # train the model
-    model.fit(train_ds, validation_data=model_val_ds,
+    model.fit(train_ds, validation_data=model_val_ds, verbose=2,
               epochs=args.epochs, initial_epoch=initial_epoch,
-              callbacks=callbacks)
+              steps_per_epoch=steps_per_epoch, callbacks=callbacks)
 
     # save keras model
     save_path = args.job_dir + '/keras_model'

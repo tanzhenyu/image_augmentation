@@ -268,8 +268,9 @@ def main(args):
         val_ds = val_ds.map(cast_to_float, tf.data.experimental.AUTOTUNE)
 
     # shuffle and batch the dataset
-    train_ds = train_ds.shuffle(1024, reshuffle_each_iteration=True).batch(args.train_batch_size,
-                                                                           drop_remainder=True)
+    train_ds = train_ds.shuffle(1024,
+                                reshuffle_each_iteration=True).repeat().batch(args.train_batch_size,
+                                                                              drop_remainder=True)
     minival_ds = minival_ds.batch(args.val_batch_size, drop_remainder=True)
     val_ds = val_ds.batch(args.val_batch_size, drop_remainder=True)
 
@@ -279,8 +280,8 @@ def main(args):
     val_ds = val_ds.prefetch(tf.data.experimental.AUTOTUNE)
 
     # calculate steps per epoch for optimizer schedule num steps
-    steps_per_epoch = tf.data.experimental.cardinality(train_ds)
-    steps_per_epoch = steps_per_epoch.numpy()  # helps model optimizer become JSON serializable
+    steps_per_epoch = tf.data.experimental.cardinality(ds['train_ds']) // args.train_batch_size
+    steps_per_epoch = int(steps_per_epoch.numpy())  # helps model optimizer become JSON serializable
 
     init_lr = args.base_lr * (args.train_batch_size / 256.)
 
@@ -454,7 +455,9 @@ def main(args):
         # Training Loop
         total_loss = 0.0
         num_batches = 0
-        for inputs in train_dist_ds:
+        for epoch_step, inputs in enumerate(train_dist_ds):
+            if epoch_step >= steps_per_epoch:
+                break  # epoch finished
             total_loss += distributed_train_step(inputs)
             num_batches += 1
 
