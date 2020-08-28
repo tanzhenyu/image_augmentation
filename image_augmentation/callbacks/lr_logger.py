@@ -19,7 +19,7 @@ class TensorBoardLRLogger(Callback):
         if hasattr(self.model.optimizer.learning_rate, '__call__'):
             self.callable_learning_rate = True
 
-    def on_train_batch_end(self, batch, logs=None):
+    def on_epoch_end(self, batch, logs=None):
         with self.writer.as_default():
             if self.callable_learning_rate:
                 lr = self.model.optimizer.learning_rate(self.model.optimizer.iterations)
