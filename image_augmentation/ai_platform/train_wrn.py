@@ -416,7 +416,8 @@ def main(args):
     logging.info("Using model checkpoint directory: %s", checkpoint_path)
 
     # train the model
-    model.fit(train_ds, validation_data=val_ds, epochs=args.epochs, callbacks=callbacks)
+    model.fit(train_ds, verbose=2, validation_data=val_ds,
+              epochs=args.epochs, callbacks=callbacks)
 
     # save keras model
     save_path = args.job_dir + '/keras_model'
