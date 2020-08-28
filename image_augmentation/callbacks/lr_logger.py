@@ -33,4 +33,3 @@ class TensorBoardLRLogger(Callback):
                 else:
                     wd = self.model.optimizer.weight_decay
                 tf.summary.scalar("weight_decay", wd, step=self.model.optimizer.iterations)
-        self.writer.flush()
