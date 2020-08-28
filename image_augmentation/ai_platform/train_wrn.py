@@ -402,7 +402,8 @@ def main(args):
             logging.info("Using loss: Cross Entropy")
             loss_fn = tf.keras.losses.sparse_categorical_crossentropy
 
-        model.compile(optimizer=opt, loss=loss_fn, metrics=metrics)
+        model.compile(optimizer=opt, loss=loss_fn, metrics=metrics,
+                      experimental_steps_per_execution=steps_per_epoch)
 
     # prepare tensorboard logging
     tb_path = args.job_dir + '/tensorboard'
