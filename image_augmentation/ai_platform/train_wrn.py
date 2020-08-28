@@ -369,17 +369,17 @@ def main(args):
         if args.optimizer.startswith('sgd'):
             if args.weight_decay_rate:
                 logging.info("Using optimizer: SGDW (SGD w/ weight decay)")
-                opt = tfa.optimizers.SGDW(weight_decay, lr, momentum=0.9, nesterov=args.sgd_nesterov)
+                opt = tfa.optimizers.SGDW(weight_decay, lr, momentum=0.9, nesterov=args.sgd_nesterov, clipnorm=5.0)
             else:
                 logging.info("Using optimizer: SGD")
-                opt = keras.optimizers.SGD(lr, momentum=0.9, nesterov=args.sgd_nesterov)
+                opt = keras.optimizers.SGD(lr, momentum=0.9, nesterov=args.sgd_nesterov, clipnorm=5.0)
         else:  # adam
             if args.weight_decay_rate:
                 logging.info("Using optimizer: AdamW (Adam w/ weight decay)")
-                opt = tfa.optimizers.AdamW(weight_decay, lr)
+                opt = tfa.optimizers.AdamW(weight_decay, lr, clipnorm=5.0)
             else:
                 logging.info("Using optimizer: Adam")
-                opt = keras.optimizers.Adam(lr)
+                opt = keras.optimizers.Adam(lr, clipnorm=5.0)
 
         metrics = [keras.metrics.SparseCategoricalAccuracy()]
         # use top-5 accuracy metric with ImageNet and reduced-ImageNet only
