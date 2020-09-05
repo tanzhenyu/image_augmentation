@@ -7,7 +7,6 @@ from image_augmentation.image import auto_contrast, invert, equalize, solarize, 
 from image_augmentation.image import posterize, contrast, color, brightness, sharpness, cutout
 
 
-# unused function, TODO: report bug to TFA for incorrect `replace` support with float32 images tfa.image.*
 def convenient_type(tfa_image_fn):
     """Convenience function to cast `replace` argument to match image dtype.
     Required for `tfa.image.translate_xy`, `tfa.image.shear_x`, `tfa.image.shear_y`
@@ -18,10 +17,10 @@ def convenient_type(tfa_image_fn):
 
 
 TRANSFORMS = {
-    "ShearX": tfa.image.shear_x,
-    "ShearY": tfa.image.shear_y,
-    "TranslateX": tfa.image.translate_xy,
-    "TranslateY": tfa.image.translate_xy,
+    "ShearX": convenient_type(tfa.image.shear_x),
+    "ShearY": convenient_type(tfa.image.shear_y),
+    "TranslateX": convenient_type(tfa.image.translate_xy),
+    "TranslateY": convenient_type(tfa.image.translate_xy),
     "Rotate": tfa.image.rotate,
     "AutoContrast": auto_contrast,
     "Invert": invert,
