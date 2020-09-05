@@ -25,8 +25,8 @@ This project is currently a work in progress and includes the following componen
 - [Pre-processing](./image_augmentation/preprocessing) using Baseline Augmentation and Standardization or Rescaling
 - [Image Data Augmentation](./image_augmentation/image#image-data-augmentation)
     - Data augmentation using AutoAugment policies / RandAugment strategy
-    - [Policy Augmentation](image_augmentation/image/augmentation.py#L292-L359) (for AutoAugment)
-    - [RandAugment](image_augmentation/image/augmentation.py#L376-L444)
+    - [Policy Augmentation](image_augmentation/image/augmentation.py#L379-L480) (for AutoAugment)
+    - [RandAugment](image_augmentation/image/augmentation.py#L517-L587)
 
 ## Datasets
 
@@ -38,7 +38,8 @@ The following are the list of datasets that we're currently looking at for augme
 
 ## Installation
 
-The pre-requisites for this project include installation of TensorFlow v2.3.0 or tf-nightly package, both of which are pre-releases of the TensorFlow framework.
+The pre-requisites for this project include installation of TensorFlow v2.3 or tf-nightly package.
+Additional dependencies include [TFDS-nightly](https://github.com/tensorflow/datasets) and [TFA-nightly](https://github.com/tensorflow/addons), both of which require pre-release versions.
 
 ```bash
 git clone https://github.com/tanzhenyu/image_augmentation
