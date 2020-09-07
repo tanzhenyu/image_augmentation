@@ -12,8 +12,10 @@ def convenient_type(tfa_image_fn):
     Required for `tfa.image.translate_xy`, `tfa.image.shear_x`, `tfa.image.shear_y`
     function calls.
     """
-    return lambda image, level, replace: tfa_image_fn(
-        image, level, tf.constant(tf.image.convert_image_dtype(tf.cast(replace, tf.uint8), image.dtype)))
+    def wrapper(image, level, replace):
+        casted_replace = replace / 255 if image.dtype != tf.uint8 else replace
+        return tfa_image_fn(image, level, casted_replace)
+    return wrapper
 
 
 TRANSFORMS = {
