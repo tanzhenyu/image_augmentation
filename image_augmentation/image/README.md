@@ -185,7 +185,7 @@ augmenter = PolicyAugmentation(custom_policy)
 # fetch a few images and resize them to 331 x 331
 images = [tf.image.resize(sample['image'], (331, 331))
           for sample in flowers_ds.take(20)]
-images = tf.cast(images, tf.uint8) # TODO: fix PolicyAugmentation operability with tf.float32 images
+images = tf.cast(images, tf.uint8)
 show_images(images) # show original images
 
 # PolicyAugmentation class uses a few hyperparameters for translate_max,
