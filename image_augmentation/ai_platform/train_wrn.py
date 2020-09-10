@@ -396,7 +396,8 @@ def main(args):
                         labels, predictions))
 
                 for var in model.trainable_variables:
-                    loss += args.l2_reg * tf.nn.l2_loss(var)
+                    loss += tf.nn.scale_regularization_loss(
+                        args.l2_reg * tf.nn.l2_loss(var))
                 return loss
         else:
             logging.info("Using loss: Cross Entropy")
