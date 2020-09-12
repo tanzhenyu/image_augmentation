@@ -15,7 +15,8 @@ from image_augmentation.optimizer_schedules import WarmupExponentialDecay
 
 
 def get_args():
-    parser = argparse.ArgumentParser(description='Train EfficientNet on ImageNet dataset')
+    parser = argparse.ArgumentParser(description='Train EfficientNet (using a custom training loop)'
+                                                 ' on ImageNet dataset')
 
     parser.add_argument(
         '--job-dir',
