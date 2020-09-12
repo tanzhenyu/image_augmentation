@@ -396,6 +396,7 @@ def main(args):
 
         if args.l2_reg != 0:
             logging.info("Using loss: Cross Entropy w/ L2 regularization")
+
             @tf.function
             def loss_fn(labels, predictions):
                 loss = tf.nn.compute_average_loss(

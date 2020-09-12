@@ -276,7 +276,10 @@ def levels_to_args(translate_max_loc=150, rotate_max_deg=30, cutout_max_size=60,
 
     def posterize_args(level):
         num_bits = param(level, posterize_min_arg, posterize_max_arg)
-        num_bits = int(num_bits)
+        # make sure that `num_bits` cycle (1, 2, .., 8, 1, 2, ..)
+        # useful for higher magnitudes in RandAugment
+        # (without mod, Posterize cannot work for values [9, ..
+        num_bits = int(num_bits) % 8
         return num_bits,
 
     def _blend_args(level):
