@@ -8,6 +8,8 @@ import tensorflow as tf
 from tensorflow import keras
 import tensorflow_addons as tfa
 
+from tensorflow.python.keras.applications import efficientnet
+
 from image_augmentation.datasets import large_imagenet
 from image_augmentation.image import autoaugment_policy, PolicyAugmentation, RandAugment
 from image_augmentation.preprocessing.efficientnet_preprocess import preprocess_fn_builder
@@ -148,35 +150,35 @@ def get_args():
 EFFICIENTNET = {
     'efficientnet-b0': {
         'image_size': 224,
-        'model_builder': keras.applications.efficientnet.EfficientNetB0
+        'model_builder': efficientnet.EfficientNetB0
     },
     'efficientnet-b1': {
         'image_size': 240,
-        'model_builder': keras.applications.efficientnet.EfficientNetB1
+        'model_builder': efficientnet.EfficientNetB1
     },
     'efficientnet-b2': {
         'image_size': 260,
-        'model_builder': keras.applications.efficientnet.EfficientNetB2
+        'model_builder': efficientnet.EfficientNetB2
     },
     'efficientnet-b3': {
         'image_size': 300,
-        'model_builder': keras.applications.efficientnet.EfficientNetB3
+        'model_builder': efficientnet.EfficientNetB3
     },
     'efficientnet-b4': {
         'image_size': 380,
-        'model_builder': keras.applications.efficientnet.EfficientNetB4
+        'model_builder': efficientnet.EfficientNetB4
     },
     'efficientnet-b5': {
         'image_size': 456,
-        'model_builder': keras.applications.efficientnet.EfficientNetB5
+        'model_builder': efficientnet.EfficientNetB5
     },
     'efficientnet-b6': {
         'image_size': 528,
-        'model_builder': keras.applications.efficientnet.EfficientNetB6
+        'model_builder': efficientnet.EfficientNetB6
     },
     'efficientnet-b7': {
         'image_size': 600,
-        'model_builder': keras.applications.efficientnet.EfficientNetB7
+        'model_builder': efficientnet.EfficientNetB7
     }
 }
 
@@ -194,6 +196,15 @@ def main(args):
 
     # display script args
     logging.info("Arguments: %s", str(args))
+
+    # use cross-replica distribute Strategy-aware batch normalization layers
+    if args.tpu:
+        # inject SyncBatchNormalization at module level so as to speed up training on TPU
+        # by using this the keras applications EfficientNet architecture need not be rewritten
+        # for use on a TPU
+        # Note: SyncBatchNormalization Keras layer has support for cross-replica
+        # while teh standard BatchNormalization layer can only support a single node
+        efficientnet.layers.BatchNormalization = tf.keras.layers.experimental.SyncBatchNormalization
 
     if args.tpu:
         resolver = tf.distribute.cluster_resolver.TPUClusterResolver(tpu=args.tpu)
