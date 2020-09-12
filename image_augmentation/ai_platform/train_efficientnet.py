@@ -15,7 +15,8 @@ from image_augmentation.callbacks import ExtraValidation
 
 
 def get_args():
-    parser = argparse.ArgumentParser(description='Train EfficientNet on ImageNet dataset')
+    parser = argparse.ArgumentParser(description='Train EfficientNet (use Keras model.fit)'
+                                                 ' on ImageNet dataset')
 
     parser.add_argument(
         '--job-dir',

@@ -19,6 +19,7 @@ def convenient_type(tfa_image_fn):
 
 
 TRANSFORMS = {
+    "Identity": lambda image: image,
     "ShearX": convenient_type(tfa.image.shear_x),
     "ShearY": convenient_type(tfa.image.shear_y),
     "TranslateX": convenient_type(tfa.image.translate_xy),
@@ -266,7 +267,7 @@ def levels_to_args(translate_max_loc=150, rotate_max_deg=30, cutout_max_size=60,
     def _no_args(_):
         return ()
     # auto_contrast, invert, equalize uses no args
-    auto_contrast_args = invert_args = equalize_args = _no_args
+    identity_args = auto_contrast_args = invert_args = equalize_args = _no_args
 
     def solarize_args(level):
         threshold = param(level, solarize_min_arg, solarize_max_arg)
@@ -275,7 +276,10 @@ def levels_to_args(translate_max_loc=150, rotate_max_deg=30, cutout_max_size=60,
 
     def posterize_args(level):
         num_bits = param(level, posterize_min_arg, posterize_max_arg)
-        num_bits = int(num_bits)
+        # make sure that `num_bits` cycle (1, 2, .., 8, 1, 2, ..)
+        # useful for higher magnitudes in RandAugment
+        # (without mod, Posterize cannot work for values [9, ..
+        num_bits = int(num_bits) % 8
         return num_bits,
 
     def _blend_args(level):
@@ -290,6 +294,7 @@ def levels_to_args(translate_max_loc=150, rotate_max_deg=30, cutout_max_size=60,
         return size,
 
     return {
+        "Identity": identity_args,
         "ShearX": shear_x_args,
         "ShearY": shear_y_args,
         "TranslateX": translate_x_args,
@@ -482,10 +487,9 @@ class PolicyAugmentation:
         return self.apply(images)
 
 
-def apply_randaugment(image, num_layers, magnitude, args):
+def apply_randaugment(image, num_layers, magnitude, args, op_names):
     """Applies RandAugment on a single image with given value of `M` and `N`."""
     image_shape = image.shape
-    op_names = list(TRANSFORMS.keys())
 
     def get_op_fn_and_args(op_name_, magnitude_, args):
         """Obtains the operation and relevant args given `op_name` and `magnitude`."""
@@ -525,8 +529,11 @@ class RandAugment:
             or a single image.
     """
 
-    def __init__(self, magnitude, num_layers, translate_max=150,
-                 rotate_max_degree=30, cutout_max_size=60, seed=None):
+    def __init__(self, magnitude, num_layers, use_identity_op=False,
+                 use_cutout_op=True, use_invert_op=True,
+                 use_solarize_add_op=True, translate_max=100,
+                 rotate_max_degree=30, cutout_max_size=40,
+                 seed=None):
         """Applies data augmentation on image(s) using RandAugment strategy.
 
         Args:
@@ -536,12 +543,18 @@ class RandAugment:
             num_layers: An int hyperparameter `N` (as per paper) used to determine the
                 number of randomly selected image op(s) that are to be applied on each image.
                 Usually best values are in the range `[1, 3]`.
+            use_cutout_op: A bool hyperparameter, whether or not to use Cutout
+                op in the RandAugment strategy. NOTE: Cutout op is only required
+                while training on EfficientNet.
+            use_solarize_add_op: A bool hyperparameter, whether or not to use SolarizeAdd
+                op in the RandAugment strategy. NOTE: Cutout op is only required
+                while training on EfficientNet.
             translate_max: An int hyperparameter that is used to determine the
-                allowed maximum number of pixels for translation. Default is `150`.
+                allowed maximum number of pixels for translation. Default is `100`.
             rotate_max_degree: An int hyperparameter in the range [0, 360] to determine
                 the allowed maximum degree of rotation. Default is `30`.
             cutout_max_size: An int hyperparameter to determine the allowed maximum
-                size of square patch for cutout (should be divisible by 2). Default is `60`.
+                size of square patch for cutout (should be divisible by 2). Default is `40`.
             seed: An int value for setting seed to ensure deterministic results.
                 Default is `None`.
         """
@@ -552,12 +565,44 @@ class RandAugment:
         self.rotate_max_degree = rotate_max_degree
         self.cutout_max_size = cutout_max_size
 
-        max_level = 30  # RandAugment paper suggests max value as 30
+        # identity op is used when training on WideResNet / alike
+        # it is not used when training on EfficientNet
+        self.use_identity_op = use_identity_op
+
+        # these are the 3 extra op(s) used for EfficientNet training only
+        # these operations are not specified in the paper
+        # but results reported in paper related to EfficientNet, uses them
+        self.use_cutout_op = use_cutout_op
+        self.use_solarize_add_op = use_solarize_add_op
+        self.use_invert_op = use_invert_op
+
+        # determine whether Cutout, SolarizeAdd, Invert, Identity
+        # are to be used, and populate a list of op_names accordingly
+        self.usable_op_names = self._get_usable_op_names()
+
+        # RandAugment can use magnitude values in (0, 30]
+        # but essentially max level is still `10`
+        # magnitude = M / 10 * auto_augment_range
+        # (https://github.com/tensorflow/tpu/issues/637#issuecomment-571747675)
+        max_level = 10
         self.args_level = levels_to_args(max_level, self.translate_max,
                                          self.rotate_max_degree, self.cutout_max_size)
 
         if seed is not None:
             tf.random.set_seed(seed)
+
+    def _get_usable_op_names(self):
+        """The name of the op(s) that will be used with the given
+        RandAugment strategy."""
+        switches = {
+            'Identity': self.use_identity_op,
+            'Cutout': self.use_cutout_op,
+            'SolarizeAdd': self.use_solarize_add_op,
+            'Invert': self.use_invert_op
+        }
+        usable_op_names = [op_name for op_name in list(TRANSFORMS.keys())
+                           if op_name not in switches or switches[op_name]]
+        return usable_op_names
 
     def apply_on_image(self, image):
         """Applies augmentation on a single `image`.
@@ -568,7 +613,8 @@ class RandAugment:
         Returns:
              A tensor with same shape and type as that of `image`.
         """
-        return apply_randaugment(image, self.num_layers, self.magnitude, self.args_level)
+        return apply_randaugment(image, self.num_layers, self.magnitude,
+                                 self.args_level, self.usable_op_names)
 
     def apply(self, images):
         """Applies augmentation on a batch of `images`.

@@ -320,9 +320,16 @@ def main(args):
     if args.rand_augment_n:
         logging.info("Using RandAugment pre-processing: %d layers and %d magnitude",
                      args.rand_augment_n, args.rand_augment_m)
-        rand_augment = RandAugment(args.rand_augment_m, args.rand_augment_n,
+        rand_augment = RandAugment(args.rand_augment_m,
+                                   args.rand_augment_n,
                                    # set hyper parameters to size 16 as input size is 32 x 32
-                                   translate_max=16, cutout_max_size=16)
+                                   translate_max=16,
+                                   # 32 x 32 models (eg. CIFAR-10) do not use Cutout / Invert / SolarizeAdd
+                                   use_cutout_op=False,
+                                   use_invert_op=False,
+                                   use_solarize_add_op=False,
+                                   # 32 x 32 models (eg. CIFAR-10) do use Identity transform
+                                   use_identity_op=True)
         augment_map_fn = augment_map_fn_builder(rand_augment)
         train_ds = train_ds.map(augment_map_fn)
 
@@ -389,6 +396,7 @@ def main(args):
 
         if args.l2_reg != 0:
             logging.info("Using loss: Cross Entropy w/ L2 regularization")
+
             @tf.function
             def loss_fn(labels, predictions):
                 loss = tf.nn.compute_average_loss(
