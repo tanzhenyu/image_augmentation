@@ -1,5 +1,9 @@
 # Baseline Pre-processing
 
+- suitable for use directly inside the Keras model
+- supports the Keras functional API
+- mostly makes use of `PreprocessingLayer`(s)
+
 | Method name | Description | Keras layer(s) used |
 | --- | --- | --- |
 | cifar_standardization | Standardize image channels to a normal distribution with zero mean and unit variance. | `tf.keras.layers.experimental.preprocessing.Normalization` |
