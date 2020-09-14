@@ -34,9 +34,10 @@ For any particular image of the training set, we apply a subpolicy chosen random
 The corresponding image op(s) from the selected subpolicy are then applied on the image basis their individual probabilities.
 
 The AutoAugment paper provides details for policies found on 3 datasets:
-1. Reduced ImageNet [[policy](augmentation.py#L161-L187)]
-2. Reduced SVHN [[policy](augmentation.py#L134-L160)]
-3. Reduced CIFAR-10 [[policy](augmentation.py#L107-L133)]
+1. Reduced ImageNet [[policy](augmentation.py#L164-L191)]
+2. Reduced SVHN [[policy](augmentation.py#L137-L163)]
+3. Reduced CIFAR-10 [[policy](augmentation.py#L110-L136)]
+4. Imagenet (for EfficientNet) [[policy](augmentation.pyL79-L105)] (adapted from: https://github.com/tensorflow/tpu/blob/master/models/official/efficientnet/autoaugment.py)
 
 ## Usage
 

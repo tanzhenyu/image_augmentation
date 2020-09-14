@@ -25,8 +25,8 @@ This project is currently a work in progress and includes the following componen
 - [Pre-processing](./image_augmentation/preprocessing) using Baseline Augmentation and Standardization or Rescaling
 - [Image Data Augmentation](./image_augmentation/image#image-data-augmentation)
     - Data augmentation using AutoAugment policies / RandAugment strategy
-    - [Policy Augmentation](image_augmentation/image/augmentation.py#L379-L480) (for AutoAugment)
-    - [RandAugment](image_augmentation/image/augmentation.py#L517-L587)
+    - [Policy Augmentation](image_augmentation/image/augmentation.py#L386-L487) (for AutoAugment)
+    - [RandAugment](image_augmentation/image/augmentation.py#L522-L635)
 
 ## Datasets
 
