@@ -9,6 +9,21 @@ from image_augmentation.image.image_ops import cutout
 
 
 class RandomCutout(Layer):
+    """Apply random Cutout on images as described in
+    https://arxiv.org/abs/1708.04552. Internally, this layer
+    would make use of `image_augmentation.image.cutout`.
+
+    Note: as this is a pre-processing layer, Cutout operation is
+    only applied at train time and this layer has no effect at
+    inference time.
+
+    Args:
+        size: the size of Cutout region / square patch.
+        color: Value of each pixel that is to be filled in the square
+            patch formed by Cutout.
+        name: Optional name of the layer. Defaults to 'RandomCutout'.
+        **kwargs: Additional arguments that is to be passed to super class.
+    """
     def __init__(self, size=16, color=128, name=None, **kwargs):
         super(RandomCutout, self).__init__(name=name, **kwargs)
         self.size = size
@@ -36,6 +51,24 @@ class RandomCutout(Layer):
 
 
 class ReflectPadding2D(Layer):
+    """Applies reflect padding to 2D inputs. This layer is very
+    similar to `tf.keras.layers.ZeroPadding2D` except that it makes
+    use of reflect padding mode instead of zeros.
+
+    Args:
+        padding: Int, or tuple of 2 ints, or tuple of 2 tuples of 2 ints.
+          - If int: the same symmetric padding
+            is applied to height and width.
+          - If tuple of 2 ints:
+            interpreted as two different
+            symmetric padding values for height and width:
+            `(symmetric_height_pad, symmetric_width_pad)`.
+          - If tuple of 2 tuples of 2 ints:
+            interpreted as
+            `((top_pad, bottom_pad), (left_pad, right_pad))`
+        name: Optional name of the layer. Defaults to 'ReflectPadding2D'.
+        **kwargs: Additional arguments that is to be passed to super class.
+    """
     def __init__(self, padding=4, name=None, **kwargs):
         super(ReflectPadding2D, self).__init__(name=name, **kwargs)
         if isinstance(padding, int):
