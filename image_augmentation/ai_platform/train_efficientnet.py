@@ -7,6 +7,8 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 
+from tensorflow.python.keras.applications import efficientnet
+
 from image_augmentation.datasets import large_imagenet
 from image_augmentation.image import autoaugment_policy, PolicyAugmentation, RandAugment
 from image_augmentation.preprocessing.efficientnet_preprocess import preprocess_fn_builder
@@ -191,6 +193,15 @@ def main(args):
 
     # display script args
     logging.info(str(args))
+
+    # use cross-replica distribute Strategy-aware batch normalization layers
+    if args.tpu:
+        # inject SyncBatchNormalization at module level so as to speed up training on TPU
+        # by using this the keras applications EfficientNet architecture need not be rewritten
+        # for use on a TPU
+        # Note: SyncBatchNormalization Keras layer has support for cross-replica
+        # while teh standard BatchNormalization layer can only support a single node
+        efficientnet.layers.BatchNormalization = tf.keras.layers.experimental.SyncBatchNormalization
 
     if args.tpu:
         resolver = tf.distribute.cluster_resolver.TPUClusterResolver(tpu=args.tpu)
