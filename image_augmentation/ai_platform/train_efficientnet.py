@@ -129,6 +129,11 @@ def get_args():
         help='use early stopping based on mini-val split (if available), '
              'default=off')
     parser.add_argument(
+        '--validation-freq',
+        default=10,
+        type=int,
+        help='number of epochs to wait before performing each validation')
+    parser.add_argument(
         '--tpu',
         default=None,
         type=str,
@@ -354,7 +359,9 @@ def main(args):
     if minival_ds:
         model_val_ds = minival_ds
         prefix = 'ilsvrc2012_val'
-        callbacks.append(ExtraValidation(val_ds, '{}/{}'.format(tb_path, prefix)))
+        callbacks.append(ExtraValidation(val_ds,
+                                         '{}/{}'.format(tb_path, prefix),
+                                         args.validation_freq))
 
         # use early stopping with the help of minival split
         if args.early_stopping:
@@ -378,7 +385,8 @@ def main(args):
             model.optimizer.iterations.assign(initial_epoch * steps_per_epoch)
 
     # train the model
-    model.fit(train_ds, validation_data=model_val_ds, verbose=2,
+    model.fit(train_ds, validation_data=model_val_ds,
+              validation_freq=args.validation_freq, verbose=2,
               epochs=args.epochs, initial_epoch=initial_epoch,
               steps_per_epoch=steps_per_epoch, callbacks=callbacks)
 
