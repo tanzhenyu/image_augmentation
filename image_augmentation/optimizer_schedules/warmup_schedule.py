@@ -5,6 +5,17 @@ from tensorflow.keras.optimizers.schedules import ExponentialDecay
 
 
 class WarmupExponentialDecay(ExponentialDecay):
+    """Exponentially decay the learning rate with a few
+    starting warmup steps.
+
+    Args:
+        initial_learning_rate: The initial learning rate.
+        decay_steps: The number of steps to decay over. Must be positive.
+        decay_rate: The rate of decay.
+        warmup_steps: The number of starting warmup steps to use. Must be positive.
+        staircase: If True decay the learning rate at discrete intervals
+        name: Optional name of the operation. Defaults to 'WarmupExponentialDecay'.
+    """
     def __init__(self, initial_learning_rate, decay_steps,
                  decay_rate, warmup_steps, staircase=False,
                  name=None):

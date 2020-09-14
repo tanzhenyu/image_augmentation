@@ -11,10 +11,10 @@ class ExtraValidation(Callback):
     The evaluation metrics are also logged to TensorBoard.
 
     Args:
-        validation_data: a tf.data.Dataset pipeline used to evaluate the
+        validation_data: A tf.data.Dataset pipeline used to evaluate the
             model, essentially an extra validation dataset.
-        tensorboard_path: path to the TensorBoard logging directory.
-        validation_freq: number of epochs to wait before performing
+        tensorboard_path: Path to the TensorBoard logging directory.
+        validation_freq: Number of epochs to wait before performing
             subsequent evaluations.
     """
     def __init__(self, validation_data, tensorboard_path, validation_freq=1):

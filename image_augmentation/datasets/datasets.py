@@ -22,7 +22,7 @@ def cifar10(data_dir=None):
     Dataset homepage: https://www.cs.toronto.edu/~kriz/cifar.html
 
     Args:
-        data_dir: directory read/write data from TFDS
+        data_dir: Directory read/write data from TFDS
     """
     ds, info = tfds.load('cifar10', read_config=tfds.ReadConfig(skip_prefetch=True),
                          as_supervised=True, with_info=True, data_dir=data_dir)
@@ -40,7 +40,7 @@ def svhn(data_dir=None):
     Dataset homepage: http://ufldl.stanford.edu/housenumbers/
 
     Args:
-        data_dir: directory read/write data from TFDS
+        data_dir: Directory read/write data from TFDS
     """
     ds, info = tfds.load('svhn_cropped', read_config=tfds.ReadConfig(skip_prefetch=True),
                          as_supervised=True, with_info=True, data_dir=data_dir)
@@ -58,7 +58,7 @@ def reduced_cifar10(data_dir=None):
     original CIFAR-10 dataset.
 
     Args:
-        data_dir: directory read/write data from TFDS
+        data_dir: Directory read/write data from TFDS
     """
     ds = tfds.load('cifar10', read_config=tfds.ReadConfig(skip_prefetch=True),
                    as_supervised=True, data_dir=data_dir)
@@ -82,6 +82,8 @@ def imagenet(data_dir=None):
 
     Dataset homepage: https://patrykchrabaszcz.github.io/Imagenet32/
 
+    Args:
+        data_dir: Directory read/write data from TFDS
     """
     ds, info = tfds.load('imagenet_resized/32x32', shuffle_files=True,
                          read_config=tfds.ReadConfig(skip_prefetch=True),
@@ -100,7 +102,7 @@ def reduced_svhn(data_dir=None):
     original SVHN dataset.
 
     Args:
-        data_dir: directory read/write data from TFDS
+        data_dir: Directory read/write data from TFDS
     """
     ds = tfds.load('svhn_cropped', read_config=tfds.ReadConfig(skip_prefetch=True),
                    as_supervised=True, data_dir=data_dir)
@@ -123,7 +125,7 @@ def reduced_imagenet(data_dir=None):
     random Imagenet classes.
 
     Args:
-        data_dir: directory read/write data from TFDS
+        data_dir: Directory read/write data from TFDS
     """
     ds, info = tfds.load("imagenet_resized/32x32", shuffle_files=True,
                          read_config=tfds.ReadConfig(skip_prefetch=True),
@@ -170,7 +172,8 @@ def large_imagenet(data_dir=None):
     Dataset homepage: http://www.image-net.org/
 
     Args:
-        data_dir: directory read/write data from TFDS"""
+        data_dir: Directory read/write data from TFDS
+    """
     ds, info = tfds.load('imagenet2012', shuffle_files=True,
                          read_config=tfds.ReadConfig(skip_prefetch=True),
                          decoders={'image': tfds.decode.SkipDecoding()},

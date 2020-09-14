@@ -11,7 +11,7 @@ class TensorBoardLRLogger(Callback):
     value of weight decay. (eg. SGDW, AdamW)
 
     Args:
-        writer_path: path to the TensorBoard logging directory.
+        writer_path: Path to the TensorBoard logging directory.
     """
     def __init__(self, writer_path):
         super(TensorBoardLRLogger, self).__init__()
