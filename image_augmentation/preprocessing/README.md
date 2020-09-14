@@ -9,3 +9,19 @@
 
 These baseline pre-processing strategies are as per details provided in [AutoAugment](https://arxiv.org/abs/1805.09501) / [WideResNet](https://arxiv.org/abs/1605.07146) / [SGDR](https://arxiv.org/abs/1608.03983) paper. 
 In case of baseline augmentation for ImageNet dataset, random distortion of colors have been removed as the paper discusses that removal of this operation does not change the results for AutoAugment.
+
+# EfficientNet Pre-processing
+
+- adapted from: https://github.com/tensorflow/tpu/blob/master/models/official/efficientnet/preprocessing.py
+- suitable for use with `tf.data.Dataset` pipeline (eg. `ds.map(preprocess_fn_builder(224, 1000, True))`)
+
+Pre-processing on training images:
+- expects raw image bytes (binary string)
+- apply random crop (`tf.image.sample_distorted_bounding_box`)
+- apply horizontal flip with a probability of 50% (`tf.image.flip_left_right`)
+- resize using bicubic method (`tf.image.resize`)
+
+Pre-processing on validation images:
+- expects raw image bytes (binary string)
+- apply center crop
+- resize using bicubic method (`tf.image.resize`)
